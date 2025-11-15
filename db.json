@@ -1,5 +1,40 @@
 [
   {
+    "id": "1763247002561",
+    "name": "Biscotti di Berrino",
+    "servings": "4",
+    "image": "img/IMG_0344.jpeg",
+    "procedure": "Inserire in un contenitore tutti gli ingredienti secchi\nVersare sopra il succo di mela e mescolare il tutto\nLasciare riposare tutta la notte\nFormare delle piccole palline e schiacciarle\nDisporle su una teglia e cuocere a 160 gradi per circa mezz’ora",
+    "tags": "Berrino,dolci, biscotti,uvetta, mandorle, senza zucchero",
+    "ingredients": [
+      {
+        "name": "Fiocchi d'Avena integrali, meglio se piccolini",
+        "amount": "300",
+        "unit": "g"
+      },
+      {
+        "name": "Succo di Mela biologico",
+        "amount": "300",
+        "unit": "g"
+      },
+      {
+        "name": "Manciata generosa di Uvetta Sultanina",
+        "amount": "1",
+        "unit": "pz"
+      },
+      {
+        "name": "manciata di Mandorle a scaglie",
+        "amount": "1",
+        "unit": "pz"
+      },
+      {
+        "name": "Sale",
+        "amount": "",
+        "unit": "qb"
+      }
+    ]
+  },
+  {
     "id": "1763225651825",
     "name": "Brownie di Berrino",
     "servings": "4",
@@ -29,4 +64,5 @@
       }
     ]
   }
+  
 ]
