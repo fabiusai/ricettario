@@ -135,6 +135,23 @@
             color: #d97706;
             font-size: 1.5rem;
         }
+
+        /* *** MODIFICHE MODALITÀ VISTA PULITA *** */
+        .print-mode .ingredient-scale-input {
+            border-color: transparent;
+            background-color: transparent;
+            pointer-events: none; /* Non cliccabile */
+        }
+        /* Nasconde frecce input numero */
+        .print-mode .ingredient-scale-input::-webkit-outer-spin-button,
+        .print-mode .ingredient-scale-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .print-mode .ingredient-scale-input {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
     </style>
 </head>
 
@@ -244,7 +261,7 @@
                                 <span>👨‍🍳</span>
                                 <span>Procedimento</span>
                             </h3>
-                            <div id="recipe-view-procedure" class="prose prose-lg text-amber-900/90 whitespace-pre-line leading-relaxed"></div>
+                            <div id="recipe-view-procedure" class="text-amber-900/90 leading-relaxed text-lg"></div>
                         </div>
                     </div>
                 </div>
@@ -275,7 +292,7 @@
                     
                     <div>
                         <label for="recipe-image" class="block text-base font-semibold text-amber-900 mb-2">URL Immagine</label>
-                        <input type="text" id="recipe-image" placeholder="Es: img/mia-torta.png" class="w-full border-2 border-amber-200 rounded-xl px-5 py-3.5 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white/80 backdrop-blur-sm">
+                        <input type="text" id="recipe-image" placeholder="Es: brownie.png (o URL completo)" class="w-full border-2 border-amber-200 rounded-xl px-5 py-3.5 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white/80 backdrop-blur-sm">
                     </div>
 
                     <div class="bg-amber-50/50 p-6 rounded-xl border-2 border-amber-200/50">
@@ -331,7 +348,11 @@
             searchTerm: '',
             dbUrl: 'https://raw.githubusercontent.com/fabiusai/ricettario/main/db.json',
             githubUrl: 'https://github.com/fabiusai/ricettario/blob/main/db.json',
-            defaultImg: 'https://raw.githubusercontent.com/fabiusai/ricettario/main/img/ricetta.png',
+            
+            // *** MODIFICA QUI ***
+            // Usiamo un percorso relativo.
+            // Assicura che 'img/ricetta.png' esista nella tua cartella img.
+            defaultImg: 'img/ricetta.png', 
 
             ui: {
                 views: {
@@ -368,7 +389,6 @@
                 document.getElementById('add-ingredient-btn').addEventListener('click', () => this.addIngredientRow());
                 document.getElementById('ingredients-list').addEventListener('click', (e) => this.handleIngredientFormClick(e));
                 
-                // MODIFICA 3: Aggiunto listener per il ricalcolo da ingrediente
                 document.getElementById('recipe-view-ingredients').addEventListener('change', (e) => this.handleIngredientScaleChange(e));
             },
 
@@ -379,7 +399,12 @@
                     this.ui.views[viewName].classList.remove('hidden');
                 }
                 window.scrollTo(0, 0);
-                document.body.classList.remove('print-mode');
+                
+                if (document.body.classList.contains('print-mode')) {
+                    document.body.classList.remove('print-mode');
+                    document.querySelectorAll('.ingredient-scale-input').forEach(input => input.readOnly = false);
+                }
+                
                 document.getElementById('print-view-btn').innerHTML = `
                     <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                     <span>Vista Pulita</span>`;
@@ -565,6 +590,8 @@
                 this.renderRecipeList();
             },
 
+            // *** MODIFICA QUI ***
+            // Logica immagine semplificata e corretta
             renderRecipeView(id) {
                 const recipe = this.recipes.find(r => r.id === id);
                 if (!recipe) return;
@@ -574,17 +601,61 @@
                 document.getElementById('recipe-view-servings-original').textContent = recipe.servings;
                 document.getElementById('recipe-servings-input').value = recipe.servings;
                 
-                // MODIFICA 2: Logica immagine aggiornata
                 const img = document.getElementById('recipe-view-image');
-                img.src = recipe.image || this.defaultImg; // Usa default SOLO se recipe.image è vuoto
-                img.onerror = null; // NON usare fallback se il link custom è rotto
                 
-                document.getElementById('recipe-view-procedure').textContent = recipe.procedure;
-                this.renderIngredients(recipe.ingredients, 1); // Renderizza con fattore 1
+                // 1. Imposta l'onerror per il fallback
+                img.onerror = () => {
+                    if (img.src !== this.defaultImg) {
+                        img.src = this.defaultImg;
+                    }
+                    img.onerror = null; 
+                };
+                
+                const recipeImageValue = recipe.image || '';
+                
+                // 2. Imposta la sorgente
+                // Se il valore è vuoto, usa defaultImg.
+                // Altrimenti, usa il valore (che sia URL completo o percorso relativo)
+                img.src = recipeImageValue ? recipeImageValue : this.defaultImg;
+
+                // 3. Pulisci eventuali percorsi errati (come /img/file.png)
+                // Se l'URL non inizia con http E inizia con /... questo è un ERRORE
+                // e lo correggiamo rimuovendo il primo /
+                if (!img.src.startsWith('http') && img.src.startsWith('/')) {
+                    // Rimuove lo slash iniziale per renderlo un percorso relativo corretto
+                    img.src = img.src.substring(1);
+                }
+                
+                this.renderProcedure(recipe.procedure);
+                this.renderIngredients(recipe.ingredients, 1); 
                 this.showView('view');
             },
 
-            // MODIFICA 3: Funzione RENDER INGREDIENTS riscritta per ricalcolo
+            renderProcedure(procedureText) {
+                const procedureContainer = document.getElementById('recipe-view-procedure');
+                procedureContainer.innerHTML = ''; 
+                
+                const procedureSteps = (procedureText || '').split('\n').filter(line => line.trim() !== '');
+                
+                if (procedureSteps.length > 0) {
+                    const ul = document.createElement('ul');
+                    ul.className = 'list-none space-y-3'; 
+                    
+                    procedureSteps.forEach(step => {
+                        const li = document.createElement('li');
+                        li.className = 'flex items-start gap-3';
+                        li.innerHTML = `
+                            <span class="text-amber-600 text-xl mt-0.5">▪</span> 
+                            <span class="flex-1">${step}</span>
+                        `; 
+                        ul.appendChild(li);
+                    });
+                    procedureContainer.appendChild(ul);
+                } else {
+                    procedureContainer.innerHTML = `<p class="italic">Nessun procedimento inserito.</p>`;
+                }
+            },
+
             renderIngredients(ingredients, scaleFactor) {
                 const container = document.getElementById('recipe-view-ingredients');
                 container.innerHTML = '';
@@ -593,11 +664,10 @@
 
                 ingredients.forEach((ing, index) => {
                     const li = document.createElement('li');
-                    li.className = "flex items-center gap-3 p-2";
+                    li.className = "flex items-center gap-3 p-2 text-lg";
                     
                     let amountInputHtml;
                     const originalAmount = parseFloat(ing.amount);
-                    // Un ingrediente è scalabile se ha unità 'g' o 'pz' e un valore numerico valido
                     const isScalable = (ing.unit === 'g' || ing.unit === 'pz') && !isNaN(originalAmount);
 
                     if (ing.unit === 'qb') {
@@ -606,7 +676,6 @@
                         const scaledAmount = originalAmount * scaleFactor;
                         
                         let displayAmount;
-                        // MODIFICA 1: Arrotonda 'pz'
                         if (ing.unit === 'pz') {
                             displayAmount = Math.round(scaledAmount);
                         } else {
@@ -615,14 +684,13 @@
                         
                         amountInputHtml = `
                             <input type="number" 
-                                   class="ingredient-scale-input w-20 text-right border-2 border-amber-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-500" 
+                                   class="ingredient-scale-input w-20 text-right border-2 border-amber-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-500 text-lg" 
                                    value="${displayAmount}" 
                                    data-index="${index}"
                                    data-original-amount="${originalAmount}"
                                    data-unit="${ing.unit}">
                         `;
                     } else {
-                        // Per ingredienti non scalabili (es. "un pizzico")
                         amountInputHtml = `<span class="font-semibold text-amber-900 w-24 text-right">${ing.amount || ''}</span>`;
                     }
 
@@ -683,12 +751,10 @@
                     scaleFactor = (target.value * target.value) / (original.value * original.value);
                 }
                 
-                // MODIFICA 3: renderIngredients ora popola gli input con i valori scalati
                 this.renderIngredients(recipe.ingredients, scaleFactor);
                 this.showButtonFeedback(button, 'Fatto!', 1500, true);
             },
 
-            // MODIFICA 3: Nuova funzione per ricalcolare partendo da un ingrediente
             handleIngredientScaleChange(e) {
                 const input = e.target;
                 if (!input.classList.contains('ingredient-scale-input')) return;
@@ -698,17 +764,14 @@
                 const unit = input.dataset.unit;
                 
                 if (isNaN(newValue) || isNaN(originalValue) || originalValue === 0) {
-                    // Reset
                     input.value = (unit === 'pz') ? Math.round(originalValue) : originalValue.toFixed(1);
                     return;
                 }
                 
-                // 1. Calcola il nuovo fattore di scala
                 const scaleFactor = newValue / originalValue;
                 
-                // 2. Aggiorna tutti gli ALTRI input
                 document.querySelectorAll('.ingredient-scale-input').forEach(otherInput => {
-                    if (otherInput === input) return; // Salta l'input che è stato modificato
+                    if (otherInput === input) return; 
                     
                     const otherOriginal = parseFloat(otherInput.dataset.originalAmount);
                     const otherUnit = otherInput.dataset.unit;
@@ -721,7 +784,6 @@
                     }
                 });
                 
-                // 3. Aggiorna il campo porzioni/teglia
                 const recipe = this.recipes.find(r => r.id === this.currentRecipeId);
                 const originalServings = this.parseServings(recipe.servings);
                 
@@ -730,7 +792,6 @@
                     if (originalServings.type === 'porzioni') {
                         newServingsValue = originalServings.value * scaleFactor;
                     } else if (originalServings.type === 'teglia') {
-                        // Per le teglie, si scala con l'area (r^2)
                         const newArea = (originalServings.value * originalServings.value) * scaleFactor;
                         newServingsValue = Math.sqrt(newArea);
                     }
@@ -741,15 +802,19 @@
             },
             
             handlePrintView(button) {
-                document.body.classList.toggle('print-mode');
-                if (document.body.classList.contains('print-mode')) {
+                const isPrintMode = document.body.classList.toggle('print-mode');
+                const ingredientInputs = document.querySelectorAll('.ingredient-scale-input');
+                
+                if (isPrintMode) {
                     button.innerHTML = `
-                        <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                        <span>Mostra Controlli</span>`;
+                        <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path></svg>
+                        <span>Torna all'Editing</span>`;
+                    ingredientInputs.forEach(input => input.readOnly = true);
                 } else {
                     button.innerHTML = `
                         <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                         <span>Vista Pulita</span>`;
+                    ingredientInputs.forEach(input => input.readOnly = false);
                 }
             },
 
@@ -785,7 +850,6 @@
                 const row = document.createElement('div');
                 row.className = 'ingredient-row flex flex-col sm:flex-row gap-2 items-center bg-white p-3 rounded-lg border-2 border-amber-200/50';
                 
-                // MODIFICA 1: Aggiunta opzione 'pz'
                 row.innerHTML = `
                     <input type="text" class="ing-name flex-grow w-full border-2 border-amber-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="Nome ingrediente" value="${ingredient.name}" required>
                     <div class="flex-shrink-0 flex gap-2 w-full sm:w-auto">
@@ -850,11 +914,18 @@
                     }
                 });
 
+                // *** MODIFICA QUI ***
+                // Assicurati che i percorsi relativi non inizino con /
+                let imagePath = document.getElementById('recipe-image').value.trim();
+                if (!imagePath.startsWith('http') && imagePath.startsWith('/')) {
+                    imagePath = imagePath.substring(1); // Rimuovi lo slash
+                }
+
                 const recipe = {
                     id: id || Date.now().toString(),
                     name: document.getElementById('recipe-name').value.trim(),
                     servings: document.getElementById('recipe-servings').value.trim() || '20 cm',
-                    image: document.getElementById('recipe-image').value.trim(),
+                    image: imagePath,
                     procedure: document.getElementById('recipe-procedure').value.trim(),
                     tags: document.getElementById('recipe-tags').value.trim(),
                     ingredients: ingredients
@@ -905,5 +976,6 @@
 
         window.addEventListener('DOMContentLoaded', () => app.init());
     </script>
+
 </body>
 </html>
