@@ -1,20 +1,5 @@
 [
   {
-    "id": "1763229545828",
-    "name": "test",
-    "servings": "20 cm",
-    "image": "",
-    "procedure": "sbuccia le banane",
-    "tags": "frutta, dolci,",
-    "ingredients": [
-      {
-        "name": "banane",
-        "amount": "3",
-        "unit": "pz"
-      }
-    ]
-  },
-  {
     "id": "1763225651825",
     "name": "Brownie di Berrino",
     "servings": "4",
@@ -29,8 +14,8 @@
       },
       {
         "name": "Pere",
-        "amount": "50",
-        "unit": "g"
+        "amount": "2",
+        "unit": "pz"
       },
       {
         "name": "Mandorle",
