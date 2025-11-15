@@ -4,20 +4,64 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ricettario Web App</title>
-    <!-- Caricamento Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Favicon -->
     <link rel="icon" href="favicon.ico">
     
-    <!-- Font (Inter) e Stili Personalizzati -->
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600&display=swap');
         
         body {
             font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #fef3e2 0%, #fae8d0 100%);
+        }
+        
+        h1, h2, h3 {
+            font-family: 'Playfair Display', serif;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(217, 119, 6, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(194, 65, 12, 0.03) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .container {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .paper-texture {
+            background: linear-gradient(180deg, #fffbf5 0%, #fff9f0 100%);
+            box-shadow: 0 4px 6px rgba(120, 53, 15, 0.08), 0 2px 4px rgba(120, 53, 15, 0.06);
+        }
+        
+        .corner-decoration::before,
+        .corner-decoration::after {
+            content: '✦';
+            position: absolute;
+            color: #d97706;
+            font-size: 1.25rem;
+            opacity: 0.3;
+        }
+        
+        .corner-decoration::before {
+            top: 0.75rem;
+            left: 0.75rem;
+        }
+        
+        .corner-decoration::after {
+            top: 0.75rem;
+            right: 0.75rem;
         }
 
-        /* Stili per la vista pulita/stampa */
         .print-mode #recipe-view-header,
         .print-mode #scaling-controls {
             display: none;
@@ -30,12 +74,10 @@
             padding-top: 0;
         }
         
-        /* Stile per i campi "qb" (disabilita input numerico) */
         select.unit-select[data-unit="qb"] ~ input.amount-input {
             visibility: hidden;
         }
 
-        /* Piccola animazione per la notifica */
         #notification {
             transition: transform 0.3s ease-out, opacity 0.3s ease-out;
             transform: translateY(100%);
@@ -47,204 +89,250 @@
             opacity: 1;
         }
 
-        /* Stili per le icone SVG */
         .icon-sm {
-            width: 1.25rem; /* 20px */
-            height: 1.25rem; /* 20px */
+            width: 1.25rem;
+            height: 1.25rem;
         }
         .icon-xs {
-            width: 1rem; /* 16px */
-            height: 1rem; /* 16px */
+            width: 1rem;
+            height: 1rem;
+        }
+        
+        .btn-recipe {
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-recipe:hover {
+            transform: translateY(-1px);
+        }
+        
+        .recipe-tag {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 1px solid #f59e0b;
+            transition: all 0.2s ease;
+        }
+        
+        .recipe-tag:hover {
+            background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%);
+            transform: scale(1.05);
+        }
+        
+        .divider-decorative {
+            height: 2px;
+            background: linear-gradient(to right, transparent, #d97706, transparent);
+            position: relative;
+        }
+        
+        .divider-decorative::after {
+            content: '❦';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background: #fffbf5;
+            padding: 0 1rem;
+            color: #d97706;
+            font-size: 1.5rem;
         }
     </style>
 </head>
 
-<body class="bg-stone-50 text-gray-800">
-
-    <!-- Contenitore Principale -->
-    <div class="container max-w-5xl mx-auto p-4 md:p-6">
-
-        <header class="text-center mb-6 md:mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-yellow-800">Il mio Ricettario</h1>
+<body class="min-h-screen">
+    <div class="container max-w-6xl mx-auto p-4 md:p-8">
+        <header class="text-center mb-8 md:mb-12 relative">
+            <div class="inline-block relative">
+                <h1 class="text-5xl md:text-6xl font-bold text-amber-900 mb-2 tracking-tight">Il mio Ricettario</h1>
+                <div class="divider-decorative mt-4"></div>
+            </div>
+            <p class="text-amber-800/70 mt-4 text-lg italic">Raccolte di sapori e tradizioni</p>
         </header>
 
-        <!-- AREA GESTIONE DATABASE (Vista Lista) -->
         <main id="db-manager-view">
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                <h2 class="text-2xl font-semibold mb-4 text-gray-700">Gestione Ricette</h2>
+            <div class="paper-texture corner-decoration p-6 md:p-8 rounded-2xl border-2 border-amber-200/50 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-100/20 to-transparent rounded-full -mr-16 -mt-16"></div>
                 
-                <!-- Barra Strumenti -->
-                <div class="flex flex-col md:flex-row gap-2 mb-4">
-                    <input type="search" id="search-input" placeholder="Cerca ricetta..." class="flex-grow w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-600">
-                    <button id="add-recipe-btn" class="w-full md:w-auto bg-yellow-700 text-white px-5 py-3 rounded-lg font-medium hover:bg-yellow-800 transition-colors duration-150 flex items-center justify-center gap-2">
-                        <!-- Icona Plus -->
-                        <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                        <span>Aggiungi</span>
+                <h2 class="text-3xl font-bold mb-6 text-amber-900 relative">Le mie Ricette</h2>
+                
+                <div class="flex flex-col md:flex-row gap-3 mb-6">
+                    <div class="flex-grow relative">
+                        <input type="search" id="search-input" placeholder="Cerca tra le ricette..." class="w-full border-2 border-amber-200 rounded-xl px-5 py-3.5 pl-12 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white/80 backdrop-blur-sm transition-all">
+                        <svg class="icon-sm absolute left-4 top-1/2 -translate-y-1/2 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                    <button id="add-recipe-btn" class="btn-recipe w-full md:w-auto bg-gradient-to-r from-amber-600 to-amber-700 text-white px-6 py-3.5 rounded-xl font-semibold hover:from-amber-700 hover:to-amber-800 shadow-lg shadow-amber-900/20 flex items-center justify-center gap-2">
+                        <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        <span>Nuova Ricetta</span>
                     </button>
                 </div>
 
-                <!-- Strumenti DB -->
-                <div class="flex flex-col sm:flex-row gap-2 mb-4">
-                    <button id="load-db-btn" class="flex-1 bg-stone-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-stone-700 transition-colors duration-150 text-sm">
-                        Carica da db.json
+                <div class="flex flex-col sm:flex-row gap-2 mb-6 p-4 bg-amber-50/50 rounded-xl border border-amber-200/50">
+                    <button id="load-db-btn" class="flex-1 bg-white border-2 border-amber-300 text-amber-900 px-4 py-2.5 rounded-lg font-medium hover:bg-amber-50 transition-all text-sm shadow-sm">
+                        📥 Carica da db.json
                     </button>
-                    <button id="save-github-btn" class="flex-1 bg-stone-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-stone-700 transition-colors duration-150 text-sm">
-                        Salva su GitHub (Copia)
+                    <button id="save-github-btn" class="flex-1 bg-white border-2 border-amber-300 text-amber-900 px-4 py-2.5 rounded-lg font-medium hover:bg-amber-50 transition-all text-sm shadow-sm">
+                        📤 Salva su GitHub
                     </button>
-                    <button id="export-json-btn" class="flex-1 bg-stone-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-stone-700 transition-colors duration-150 text-sm">
-                        Esporta JSON
+                    <button id="export-json-btn" class="flex-1 bg-white border-2 border-amber-300 text-amber-900 px-4 py-2.5 rounded-lg font-medium hover:bg-amber-50 transition-all text-sm shadow-sm">
+                        💾 Esporta JSON
                     </button>
-                    <button id="reset-filters-btn" class="flex-1 bg-gray-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-600 transition-colors duration-150 text-sm hidden">
-                        Reset Filtri
+                    <button id="reset-filters-btn" class="flex-1 bg-white border-2 border-rose-300 text-rose-900 px-4 py-2.5 rounded-lg font-medium hover:bg-rose-50 transition-all text-sm shadow-sm hidden">
+                        🔄 Reset Filtri
                     </button>
                 </div>
 
-                <!-- Lista Ricette -->
-                <div id="recipe-list-container" class="space-y-3">
-                    <!-- Le ricette verranno popolate qui da JS -->
-                    <p class="text-gray-500 text-center py-4">Caricamento ricette...</p>
+                <div id="recipe-list-container" class="space-y-4">
+                    <p class="text-amber-700/60 text-center py-8 italic">Caricamento ricette...</p>
                 </div>
             </div>
         </main>
 
-        <!-- AREA VISUALIZZAZIONE RICETTA (Vista Singola) -->
         <section id="recipe-view" class="hidden">
-            <!-- Intestazione Vista -->
-            <div id="recipe-view-header" class="flex justify-between items-center mb-4">
-                <button id="back-to-list-btn" class="bg-stone-200 text-stone-800 px-4 py-2 rounded-lg font-medium hover:bg-stone-300 transition-colors duration-150 flex items-center gap-2">
-                    <!-- Icona Freccia Sinistra -->
-                    <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                    <span>Lista</span>
+            <div id="recipe-view-header" class="flex justify-between items-center mb-6">
+                <button id="back-to-list-btn" class="btn-recipe bg-white border-2 border-amber-300 text-amber-900 px-5 py-3 rounded-xl font-semibold hover:bg-amber-50 shadow-md flex items-center gap-2">
+                    <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    <span>Torna alla Lista</span>
                 </button>
-                <button id="print-view-btn" class="bg-stone-200 text-stone-800 px-4 py-2 rounded-lg font-medium hover:bg-stone-300 transition-colors duration-150 flex items-center gap-2">
-                    <!-- Icona Stampa -->
-                    <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm7-8a1 1 0 01-1-1V5a1 1 0 00-1-1H9a1 1 0 00-1 1v4a1 1 0 01-1 1"></path></svg>
+                <button id="print-view-btn" class="btn-recipe bg-white border-2 border-amber-300 text-amber-900 px-5 py-3 rounded-xl font-semibold hover:bg-amber-50 shadow-md flex items-center gap-2">
+                    <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                     <span>Vista Pulita</span>
                 </button>
             </div>
 
-            <!-- Contenuto Ricetta -->
-            <div class="bg-white p-4 md:p-8 rounded-xl shadow-lg border border-gray-200">
+            <div class="paper-texture corner-decoration p-6 md:p-10 rounded-2xl border-2 border-amber-200/50 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-40 h-40 bg-gradient-to-br from-orange-100/20 to-transparent rounded-full -ml-20 -mt-20"></div>
                 
-                <h2 id="recipe-view-name" class="text-3xl md:text-4xl font-bold text-gray-800 mb-4"></h2>
+                <h2 id="recipe-view-name" class="text-4xl md:text-5xl font-bold text-amber-900 mb-6 relative"></h2>
                 
-                <img id="recipe-view-image" src="" alt="Immagine ricetta" class="w-full h-48 md:h-72 object-cover rounded-lg mb-6 border border-gray-200">
+                <div class="relative mb-8">
+                    <img id="recipe-view-image" src="" alt="Immagine ricetta" class="w-full h-56 md:h-96 object-cover rounded-xl border-4 border-white shadow-xl">
+                    <div class="absolute inset-0 rounded-xl shadow-inner pointer-events-none"></div>
+                </div>
                 
-                <p class="text-base text-gray-600 mb-4 italic">
-                    Dosi originali per: <strong id="recipe-view-servings-original"></strong>
+                <p class="text-lg text-amber-800/80 mb-6 italic text-center bg-amber-50/50 py-3 px-6 rounded-lg border border-amber-200/50">
+                    🍽️ Dosi originali per: <strong class="text-amber-900 font-semibold" id="recipe-view-servings-original"></strong>
                 </p>
 
-                <!-- Controlli Scaling -->
-                <div id="scaling-controls" class="bg-yellow-50 p-4 rounded-lg border border-yellow-200 mb-6">
-                    <h3 class="text-lg font-semibold text-yellow-800 mb-3">Ricalcola Dosi</h3>
-                    <div class="flex flex-col md:flex-row gap-2">
-                        <input type="text" id="recipe-servings-input" placeholder="Es: 8 porzioni o 24 cm" class="flex-grow w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-600">
-                        <button id="scale-recipe-btn" class="w-full md:w-auto bg-yellow-700 text-white px-5 py-3 rounded-lg font-medium hover:bg-yellow-800 transition-colors duration-150">
+                <div id="scaling-controls" class="bg-gradient-to-br from-orange-50 to-amber-50 p-6 rounded-xl border-2 border-orange-200/60 mb-8 shadow-sm">
+                    <h3 class="text-xl font-bold text-orange-900 mb-4 flex items-center gap-2">
+                        <span>⚖️</span>
+                        <span>Ricalcola le Dosi</span>
+                    </h3>
+                    <div class="flex flex-col md:flex-row gap-3">
+                        <input type="text" id="recipe-servings-input" placeholder="Es: 8 porzioni o 24 cm" class="flex-grow w-full border-2 border-orange-300 rounded-lg px-5 py-3.5 focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white">
+                        <button id="scale-recipe-btn" class="btn-recipe w-full md:w-auto bg-gradient-to-r from-orange-600 to-orange-700 text-white px-6 py-3.5 rounded-lg font-semibold hover:from-orange-700 hover:to-orange-800 shadow-lg shadow-orange-900/20">
                             Ricalcola
                         </button>
                     </div>
                 </div>
 
-                <!-- Dettagli Ricetta -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- Ingredienti -->
-                    <div class="md:col-span-1">
-                        <h3 class="text-2xl font-semibold text-gray-700 mb-3 border-b-2 border-yellow-600 pb-2">Ingredienti</h3>
-                        <ul id="recipe-view-ingredients" class="space-y-2 list-disc list-inside text-gray-700">
-                            <!-- Popolati da JS -->
-                        </ul>
+                <div class="divider-decorative my-8"></div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-1">
+                        <div class="bg-amber-50/50 p-6 rounded-xl border-2 border-amber-200/50">
+                            <h3 class="text-2xl font-bold text-amber-900 mb-4 flex items-center gap-2">
+                                <span>🥕</span>
+                                <span>Ingredienti</span>
+                            </h3>
+                            <ul id="recipe-view-ingredients" class="space-y-3 list-none text-amber-900"></ul>
+                        </div>
                     </div>
                     
-                    <!-- Procedimento -->
-                    <div class="md:col-span-2">
-                        <h3 class="text-2xl font-semibold text-gray-700 mb-3 border-b-2 border-yellow-600 pb-2">Procedimento</h3>
-                        <div id="recipe-view-procedure" class="prose prose-lg text-gray-800 whitespace-pre-line">
-                            <!-- Popolato da JS -->
+                    <div class="lg:col-span-2">
+                        <div class="bg-orange-50/30 p-6 rounded-xl border-2 border-orange-200/50">
+                            <h3 class="text-2xl font-bold text-amber-900 mb-4 flex items-center gap-2">
+                                <span>👨‍🍳</span>
+                                <span>Procedimento</span>
+                            </h3>
+                            <div id="recipe-view-procedure" class="prose prose-lg text-amber-900/90 whitespace-pre-line leading-relaxed"></div>
                         </div>
                     </div>
                 </div>
-
             </div>
         </section>
 
-        <!-- AREA MODIFICA/CREAZIONE RICETTA (Vista Form) -->
         <section id="recipe-form-view" class="hidden">
-            <div class="bg-white p-4 md:p-8 rounded-xl shadow-lg border border-gray-200">
-                <h2 id="form-title" class="text-2xl font-semibold mb-6 text-gray-700">Nuova Ricetta</h2>
+            <div class="paper-texture corner-decoration p-6 md:p-10 rounded-2xl border-2 border-amber-200/50 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-amber-100/20 to-transparent rounded-full -mr-20 -mt-20"></div>
                 
-                <form id="recipe-form" class="space-y-5">
+                <h2 id="form-title" class="text-3xl font-bold mb-8 text-amber-900 relative flex items-center gap-3">
+                    <span>📝</span>
+                    <span>Nuova Ricetta</span>
+                </h2>
+                
+                <form id="recipe-form" class="space-y-6">
                     <input type="hidden" id="recipe-id">
                     
                     <div>
-                        <label for="recipe-name" class="block text-sm font-medium text-gray-700 mb-1">Nome Ricetta</label>
-                        <input type="text" id="recipe-name" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-600" required>
+                        <label for="recipe-name" class="block text-base font-semibold text-amber-900 mb-2">Nome della Ricetta</label>
+                        <input type="text" id="recipe-name" class="w-full border-2 border-amber-200 rounded-xl px-5 py-3.5 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white/80 backdrop-blur-sm" required>
                     </div>
                     
                     <div>
-                        <label for="recipe-servings" class="block text-sm font-medium text-gray-700 mb-1">Porzioni / Teglia (Default: 20 cm)</label>
-                        <input type="text" id="recipe-servings" placeholder="Es: 8 porzioni, 24 cm" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-600" required>
+                        <label for="recipe-servings" class="block text-base font-semibold text-amber-900 mb-2">Porzioni / Teglia (Default: 20 cm)</label>
+                        <input type="text" id="recipe-servings" placeholder="Es: 8 porzioni, 24 cm" class="w-full border-2 border-amber-200 rounded-xl px-5 py-3.5 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white/80 backdrop-blur-sm" required>
                     </div>
                     
                     <div>
-                        <label for="recipe-image" class="block text-sm font-medium text-gray-700 mb-1">URL Immagine</label>
-                        <input type="text" id="recipe-image" placeholder="Es: img/mia-torta.png" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-600">
+                        <label for="recipe-image" class="block text-base font-semibold text-amber-900 mb-2">URL Immagine</label>
+                        <input type="text" id="recipe-image" placeholder="Es: img/mia-torta.png" class="w-full border-2 border-amber-200 rounded-xl px-5 py-3.5 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white/80 backdrop-blur-sm">
                     </div>
 
-                    <!-- Ingredienti Dinamici -->
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-700 mb-2">Ingredienti</h3>
-                        <div id="ingredients-list" class="space-y-2">
-                            <!-- Ingredienti popolati da JS -->
-                        </div>
-                        <button type="button" id="add-ingredient-btn" class="mt-2 bg-stone-200 text-stone-800 px-4 py-2 rounded-lg font-medium hover:bg-stone-300 transition-colors duration-150 text-sm">
-                            + Aggiungi Ingrediente
+                    <div class="bg-amber-50/50 p-6 rounded-xl border-2 border-amber-200/50">
+                        <h3 class="text-xl font-bold text-amber-900 mb-4 flex items-center gap-2">
+                            <span>🥕</span>
+                            <span>Ingredienti</span>
+                        </h3>
+                        <div id="ingredients-list" class="space-y-3 mb-4"></div>
+                        <button type="button" id="add-ingredient-btn" class="bg-white border-2 border-amber-300 text-amber-900 px-5 py-2.5 rounded-lg font-semibold hover:bg-amber-50 transition-all text-sm shadow-sm">
+                            ➕ Aggiungi Ingrediente
                         </button>
                     </div>
                     
                     <div>
-                        <label for="recipe-procedure" class="block text-sm font-medium text-gray-700 mb-1">Procedimento</label>
-                        <textarea id="recipe-procedure" rows="10" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-600" required></textarea>
+                        <label for="recipe-procedure" class="block text-base font-semibold text-amber-900 mb-2 flex items-center gap-2">
+                            <span>👨‍🍳</span>
+                            <span>Procedimento</span>
+                        </label>
+                        <textarea id="recipe-procedure" rows="12" class="w-full border-2 border-amber-200 rounded-xl px-5 py-3.5 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white/80 backdrop-blur-sm font-normal" required></textarea>
                     </div>
                     
                     <div>
-                        <label for="recipe-tags" class="block text-sm font-medium text-gray-700 mb-1">Tag (separati da virgola)</label>
-                        <input type="text" id="recipe-tags" placeholder="Es: dolci, colazione, facile" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-600">
+                        <label for="recipe-tags" class="block text-base font-semibold text-amber-900 mb-2 flex items-center gap-2">
+                            <span>🏷️</span>
+                            <span>Tag (separati da virgola)</span>
+                        </label>
+                        <input type="text" id="recipe-tags" placeholder="Es: dolci, colazione, facile" class="w-full border-2 border-amber-200 rounded-xl px-5 py-3.5 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white/80 backdrop-blur-sm">
                     </div>
                     
-                    <!-- Pulsanti Form -->
-                    <div class="flex gap-3 pt-4 border-t border-gray-200">
-                        <button type="button" id="cancel-form-btn" class="flex-1 bg-stone-200 text-stone-800 px-5 py-3 rounded-lg font-medium hover:bg-stone-300 transition-colors duration-150">
+                    <div class="flex gap-4 pt-6 border-t-2 border-amber-200">
+                        <button type="button" id="cancel-form-btn" class="btn-recipe flex-1 bg-white border-2 border-amber-300 text-amber-900 px-6 py-4 rounded-xl font-semibold hover:bg-amber-50 shadow-md">
                             Annulla
                         </button>
-                        <button type="submit" id="save-form-btn" class="flex-1 bg-yellow-700 text-white px-5 py-3 rounded-lg font-medium hover:bg-yellow-800 transition-colors duration-150">
-                            Salva Ricetta
+                        <button type="submit" id="save-form-btn" class="btn-recipe flex-1 bg-gradient-to-r from-amber-600 to-amber-700 text-white px-6 py-4 rounded-xl font-semibold hover:from-amber-700 hover:to-amber-800 shadow-lg shadow-amber-900/20">
+                            💾 Salva Ricetta
                         </button>
                     </div>
                 </form>
             </div>
         </section>
+    </div>
 
-    </div> <!-- Fine Contenitore Principale -->
-
-    <!-- Notifica Toast -->
-    <div id="notification" class="fixed bottom-4 right-4 bg-gray-900 text-white px-5 py-3 rounded-lg shadow-lg">
+    <div id="notification" class="fixed bottom-6 right-6 bg-gradient-to-r from-amber-900 to-amber-800 text-white px-6 py-4 rounded-xl shadow-2xl border-2 border-amber-700 font-medium">
         Messaggio di notifica
     </div>
 
-    <!-- SCRIPT PRINCIPALE APP -->
     <script>
         const app = {
-            // --- STATO ---
             recipes: [],
-            currentView: 'list', // 'list', 'view', 'edit'
+            currentView: 'list',
             currentRecipeId: null,
             activeTag: null,
             searchTerm: '',
-            dbUrl: 'https://raw.githubusercontent.com/fabiusai/ricettario/main/db.json', // Path al db.json (raw GitHub)
+            dbUrl: 'https://raw.githubusercontent.com/fabiusai/ricettario/main/db.json',
             githubUrl: 'https://github.com/fabiusai/ricettario/blob/main/db.json',
             defaultImg: 'https://raw.githubusercontent.com/fabiusai/ricettario/main/img/ricetta.png',
 
-            // --- ELEMENTI UI ---
             ui: {
                 views: {
                     list: document.getElementById('db-manager-view'),
@@ -255,58 +343,45 @@
                 searchInput: document.getElementById('search-input'),
                 resetFiltersBtn: document.getElementById('reset-filters-btn'),
                 notification: document.getElementById('notification'),
-                // ... (altri elementi verranno presi al bisogno)
             },
 
-            // --- INIZIALIZZAZIONE ---
             init() {
-                // Caricamento iniziale
                 this.getRecipesFromLocal();
                 if (this.recipes.length === 0) {
-                    // Se localStorage è vuoto, prova a caricare da db.json
                     this.fetchRecipes(document.getElementById('load-db-btn'));
                 } else {
                     this.renderRecipeList();
                 }
 
-                // Event Listeners Principali
                 document.getElementById('add-recipe-btn').addEventListener('click', () => this.renderRecipeForm(null));
                 document.getElementById('load-db-btn').addEventListener('click', (e) => this.fetchRecipes(e.currentTarget));
                 document.getElementById('save-github-btn').addEventListener('click', (e) => this.handleSaveToGitHub(e.currentTarget));
                 document.getElementById('export-json-btn').addEventListener('click', (e) => this.handleExportJson(e.currentTarget));
                 this.ui.searchInput.addEventListener('input', (e) => this.handleSearch(e));
                 this.ui.resetFiltersBtn.addEventListener('click', () => this.resetFilters());
-                
-                // Event Delegation per la lista ricette
                 this.ui.recipeListContainer.addEventListener('click', (e) => this.handleRecipeListClick(e));
-
-                // Listeners Vista Singola
                 document.getElementById('back-to-list-btn').addEventListener('click', () => this.showView('list'));
                 document.getElementById('scale-recipe-btn').addEventListener('click', (e) => this.handleScaleRecipe(e.currentTarget));
                 document.getElementById('print-view-btn').addEventListener('click', (e) => this.handlePrintView(e.currentTarget));
-
-                // Listeners Form
                 document.getElementById('recipe-form').addEventListener('submit', (e) => this.handleFormSubmit(e));
                 document.getElementById('cancel-form-btn').addEventListener('click', () => this.showView('list'));
                 document.getElementById('add-ingredient-btn').addEventListener('click', () => this.addIngredientRow());
                 document.getElementById('ingredients-list').addEventListener('click', (e) => this.handleIngredientFormClick(e));
             },
 
-            // --- GESTIONE VISTE ---
             showView(viewName) {
                 this.currentView = viewName;
                 Object.values(this.ui.views).forEach(view => view.classList.add('hidden'));
                 if (this.ui.views[viewName]) {
                     this.ui.views[viewName].classList.remove('hidden');
                 }
-                window.scrollTo(0, 0); // Torna su
-                
-                // Resetta la modalità stampa
+                window.scrollTo(0, 0);
                 document.body.classList.remove('print-mode');
-                document.getElementById('print-view-btn').textContent = "Vista Pulita";
+                document.getElementById('print-view-btn').innerHTML = `
+                    <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    <span>Vista Pulita</span>`;
             },
 
-            // --- GESTIONE DATI (LocalStorage & Fetch) ---
             saveRecipesToLocal() {
                 localStorage.setItem('ricettarioDB', JSON.stringify(this.recipes));
             },
@@ -324,7 +399,7 @@
                 if (button) this.showButtonFeedback(button, 'Caricamento...', 99999);
                 try {
                     const response = await fetch(`${this.dbUrl}?t=${new Date().getTime()}`, {
-                        cache: 'no-store' // Forza il non uso della cache
+                        cache: 'no-store'
                     });
                     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                     const data = await response.json();
@@ -343,7 +418,6 @@
             handleSaveToGitHub(button) {
                 try {
                     const dbJson = JSON.stringify(this.recipes, null, 2);
-                    // Hack per copiare negli appunti (navigator.clipboard non funziona in iframe)
                     const textarea = document.createElement('textarea');
                     textarea.value = dbJson;
                     textarea.style.position = 'fixed';
@@ -352,11 +426,8 @@
                     textarea.select();
                     document.execCommand('copy');
                     document.body.removeChild(textarea);
-
                     this.showButtonFeedback(button, 'Copiato!', 2000);
                     this.showNotification('DB Copiato! Ora incollalo su GitHub.');
-                    
-                    // Apri la pagina di GitHub
                     window.open(this.githubUrl, '_blank');
                 } catch (e) {
                     console.error("Errore copia clipboard:", e);
@@ -371,7 +442,6 @@
                     const dbJson = JSON.stringify(this.recipes, null, 2);
                     const blob = new Blob([dbJson], { type: 'application/json' });
                     const url = URL.createObjectURL(blob);
-                    
                     const a = document.createElement('a');
                     a.href = url;
                     a.download = 'db.json';
@@ -379,7 +449,6 @@
                     a.click();
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
-
                     this.showButtonFeedback(button, 'Esportato!', 1500, true);
                 } catch (e) {
                     console.error("Errore esportazione JSON:", e);
@@ -388,25 +457,21 @@
                 }
             },
 
-            // --- RENDERING LISTA RICETTE ---
             renderRecipeList() {
-                this.ui.recipeListContainer.innerHTML = ''; // Svuota
+                this.ui.recipeListContainer.innerHTML = '';
                 
                 const filteredRecipes = this.recipes.filter(recipe => {
                     const matchesTag = !this.activeTag || (recipe.tags && recipe.tags.toLowerCase().split(',').map(t => t.trim()).includes(this.activeTag));
-                    
                     const term = this.searchTerm.toLowerCase();
                     const matchesSearch = !term || (
                         recipe.name.toLowerCase().includes(term) ||
-                        (recipe.procedure && recipe.procedure.toLowerCase().includes(term)) || // Aggiunto controllo esistenza
-                        (recipe.tags && recipe.tags.toLowerCase().includes(term)) || // Aggiunto controllo esistenza
-                        (recipe.ingredients && recipe.ingredients.some(i => i.name.toLowerCase().includes(term))) // Aggiunto controllo esistenza
+                        (recipe.procedure && recipe.procedure.toLowerCase().includes(term)) ||
+                        (recipe.tags && recipe.tags.toLowerCase().includes(term)) ||
+                        (recipe.ingredients && recipe.ingredients.some(i => i.name.toLowerCase().includes(term)))
                     );
-                    
                     return matchesTag && matchesSearch;
                 });
 
-                // Aggiorna visibilità bottone reset
                 if (this.activeTag || this.searchTerm) {
                     this.ui.resetFiltersBtn.classList.remove('hidden');
                 } else {
@@ -414,7 +479,7 @@
                 }
 
                 if (filteredRecipes.length === 0) {
-                    this.ui.recipeListContainer.innerHTML = `<p class="text-gray-500 text-center py-4">Nessuna ricetta trovata.</p>`;
+                    this.ui.recipeListContainer.innerHTML = `<p class="text-amber-700/60 text-center py-8 italic">Nessuna ricetta trovata.</p>`;
                     return;
                 }
 
@@ -423,31 +488,31 @@
                         .split(',')
                         .filter(tag => tag.trim() !== '')
                         .map(tag => `
-                            <button class="tag-btn bg-yellow-100 text-yellow-800 rounded-full px-3 py-1 text-sm font-medium hover:bg-yellow-200 transition-colors" data-tag="${tag.trim().toLowerCase()}">
+                            <button class="tag-btn recipe-tag rounded-full px-3 py-1.5 text-sm font-semibold" data-tag="${tag.trim().toLowerCase()}">
                                 ${tag.trim()}
                             </button>
                         `).join(' ');
 
                     const recipeEl = document.createElement('div');
-                    recipeEl.className = 'bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col md:flex-row md:justify-between md:items-center gap-3';
+                    recipeEl.className = 'paper-texture p-5 rounded-xl border-2 border-amber-200/50 flex flex-col md:flex-row md:justify-between md:items-center gap-4 hover:shadow-lg transition-all duration-200';
                     recipeEl.innerHTML = `
                         <div class="flex-grow">
-                            <h3 class="text-xl font-semibold text-gray-800">${recipe.name}</h3>
-                            <div class="flex flex-wrap gap-2 mt-2">
+                            <h3 class="text-2xl font-bold text-amber-900 mb-3">${recipe.name}</h3>
+                            <div class="flex flex-wrap gap-2">
                                 ${tagsHtml}
                             </div>
                         </div>
                         <div class="flex-shrink-0 flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                            <button data-action="view" data-id="${recipe.id}" class="w-full sm:w-auto bg-stone-200 text-stone-800 px-4 py-2 rounded-lg font-medium hover:bg-stone-300 transition-colors text-sm flex items-center justify-center gap-1.5">
-                                <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                            <button data-action="view" data-id="${recipe.id}" class="btn-recipe w-full sm:w-auto bg-gradient-to-r from-amber-600 to-amber-700 text-white px-5 py-3 rounded-xl font-semibold hover:from-amber-700 hover:to-amber-800 shadow-md flex items-center justify-center gap-2 text-sm">
+                                <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                 Visualizza
                             </button>
-                            <button data-action="edit" data-id="${recipe.id}" class="w-full sm:w-auto bg-stone-200 text-stone-800 px-4 py-2 rounded-lg font-medium hover:bg-stone-300 transition-colors text-sm flex items-center justify-center gap-1.5">
-                                <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path></svg>
+                            <button data-action="edit" data-id="${recipe.id}" class="btn-recipe w-full sm:w-auto bg-white border-2 border-amber-300 text-amber-900 px-5 py-3 rounded-xl font-semibold hover:bg-amber-50 shadow-md flex items-center justify-center gap-2 text-sm">
+                                <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path></svg>
                                 Modifica
                             </button>
-                            <button data-action="delete" data-id="${recipe.id}" class="w-full sm:w-auto bg-red-200 text-red-800 px-4 py-2 rounded-lg font-medium hover:bg-red-300 transition-colors text-sm flex items-center justify-center gap-1.5">
-                                <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            <button data-action="delete" data-id="${recipe.id}" class="btn-recipe w-full sm:w-auto bg-gradient-to-r from-rose-500 to-rose-600 text-white px-5 py-3 rounded-xl font-semibold hover:from-rose-600 hover:to-rose-700 shadow-md flex items-center justify-center gap-2 text-sm">
+                                <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                 Elimina
                             </button>
                         </div>
@@ -474,7 +539,6 @@
             },
             
             deleteRecipe(id, button) {
-                // In un'app reale, si userebbe un modal. Qui eliminiamo direttamente.
                 this.recipes = this.recipes.filter(r => r.id !== id);
                 this.saveRecipesToLocal();
                 this.renderRecipeList();
@@ -498,13 +562,11 @@
                 this.renderRecipeList();
             },
 
-            // --- RENDERING VISTA SINGOLA & SCALING ---
             renderRecipeView(id) {
                 const recipe = this.recipes.find(r => r.id === id);
                 if (!recipe) return;
 
                 this.currentRecipeId = id;
-
                 document.getElementById('recipe-view-name').textContent = recipe.name;
                 document.getElementById('recipe-view-servings-original').textContent = recipe.servings;
                 document.getElementById('recipe-servings-input').value = recipe.servings;
@@ -514,7 +576,6 @@
                 img.onerror = () => { img.src = this.defaultImg; };
                 
                 document.getElementById('recipe-view-procedure').textContent = recipe.procedure;
-                
                 this.renderIngredients(recipe.ingredients, 1);
                 this.showView('view');
             },
@@ -523,7 +584,7 @@
                 const container = document.getElementById('recipe-view-ingredients');
                 container.innerHTML = '';
                 
-                if (!ingredients) return; // Controllo di sicurezza
+                if (!ingredients) return;
 
                 ingredients.forEach(ing => {
                     let amountText;
@@ -531,13 +592,18 @@
                         amountText = 'q.b.';
                     } else {
                         const amount = parseFloat(ing.amount) * scaleFactor;
-                        // Arrotonda in modo intelligente
                         amountText = (amount < 10 ? amount.toFixed(1) : amount.toFixed(0)) + ` ${ing.unit}`;
                     }
                     
                     const li = document.createElement('li');
-                    li.className = "ml-4";
-                    li.innerHTML = `<strong class="font-medium">${ing.name}</strong>: ${amountText}`;
+                    li.className = "flex items-start gap-3 p-2 rounded-lg hover:bg-amber-100/50 transition-colors";
+                    li.innerHTML = `
+                        <span class="text-amber-600 text-lg mt-0.5">•</span>
+                        <div class="flex-1">
+                            <span class="font-semibold text-amber-900">${ing.name}</span>
+                            <span class="text-amber-800/80 ml-2">${amountText}</span>
+                        </div>
+                    `;
                     container.appendChild(li);
                 });
             },
@@ -552,10 +618,10 @@
                 let type;
                 if (str.includes('teglia') || str.includes('cm')) {
                     type = 'teglia';
-                } else if (str.includes('porzion')) { // 'porzione' o 'porzioni'
+                } else if (str.includes('porzion')) {
                     type = 'porzioni';
                 } else {
-                    type = 'porzioni'; // Default
+                    type = 'porzioni';
                 }
                 return { value: num, type: type };
             },
@@ -584,7 +650,6 @@
                 if (original.type === 'porzioni') {
                     scaleFactor = target.value / original.value;
                 } else if (original.type === 'teglia') {
-                    // Calcolo area (assumendo teglie tonde/quadrate)
                     scaleFactor = (target.value * target.value) / (original.value * original.value);
                 }
                 
@@ -596,25 +661,23 @@
                 document.body.classList.toggle('print-mode');
                 if (document.body.classList.contains('print-mode')) {
                     button.innerHTML = `
-                        <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                         <span>Mostra Controlli</span>`;
                 } else {
                     button.innerHTML = `
-                        <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm7-8a1 1 0 01-1-1V5a1 1 0 00-1-1H9a1 1 0 00-1 1v4a1 1 0 01-1 1"></path></svg>
+                        <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                         <span>Vista Pulita</span>`;
                 }
             },
 
-            // --- RENDERING & GESTIONE FORM ---
             renderRecipeForm(id) {
                 const form = document.getElementById('recipe-form');
-                form.reset(); // Pulisce il form
+                form.reset();
                 document.getElementById('ingredients-list').innerHTML = '';
                 
                 if (id) {
-                    // Modalità Modifica
                     const recipe = this.recipes.find(r => r.id === id);
-                    document.getElementById('form-title').textContent = 'Modifica Ricetta';
+                    document.getElementById('form-title').innerHTML = '<span>✏️</span><span>Modifica Ricetta</span>';
                     document.getElementById('recipe-id').value = recipe.id;
                     document.getElementById('recipe-name').value = recipe.name;
                     document.getElementById('recipe-servings').value = recipe.servings;
@@ -622,15 +685,13 @@
                     document.getElementById('recipe-procedure').value = recipe.procedure;
                     document.getElementById('recipe-tags').value = recipe.tags || '';
                     
-                    if (recipe.ingredients) { // Controllo sicurezza
+                    if (recipe.ingredients) {
                         recipe.ingredients.forEach(ing => this.addIngredientRow(ing));
                     }
                 } else {
-                    // Modalità Creazione
-                    document.getElementById('form-title').textContent = 'Nuova Ricetta';
+                    document.getElementById('form-title').innerHTML = '<span>📝</span><span>Nuova Ricetta</span>';
                     document.getElementById('recipe-id').value = '';
-                    document.getElementById('recipe-servings').value = '20 cm'; // Default
-                    // Aggiungi un ingrediente vuoto
+                    document.getElementById('recipe-servings').value = '20 cm';
                     this.addIngredientRow();
                 }
                 this.showView('form');
@@ -639,34 +700,31 @@
             addIngredientRow(ingredient = { name: '', amount: '', unit: 'g' }) {
                 const list = document.getElementById('ingredients-list');
                 const row = document.createElement('div');
-                row.className = 'ingredient-row flex flex-col sm:flex-row gap-2 items-center';
+                row.className = 'ingredient-row flex flex-col sm:flex-row gap-2 items-center bg-white p-3 rounded-lg border-2 border-amber-200/50';
                 
                 row.innerHTML = `
-                    <input type-="text" class="ing-name flex-grow w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Ingrediente" value="${ingredient.name}" required>
+                    <input type="text" class="ing-name flex-grow w-full border-2 border-amber-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="Nome ingrediente" value="${ingredient.name}" required>
                     <div class="flex-shrink-0 flex gap-2 w-full sm:w-auto">
-                        <select class="unit-select w-20 border border-gray-300 rounded-lg px-3 py-2" data-unit="${ingredient.unit}">
+                        <select class="unit-select w-20 border-2 border-amber-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500" data-unit="${ingredient.unit}">
                             <option value="g" ${ingredient.unit === 'g' ? 'selected' : ''}>g</option>
                             <option value="qb" ${ingredient.unit === 'qb' ? 'selected' : ''}>q.b.</option>
                         </select>
-                        <input type="number" class="amount-input w-24 border border-gray-300 rounded-lg px-3 py-2" placeholder="Peso" value="${ingredient.amount}">
-                        <button type="button" class="remove-ingredient-btn bg-red-200 text-red-800 p-2 rounded-lg hover:bg-red-300">
-                            <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        <input type="number" class="amount-input w-24 border-2 border-amber-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="Peso" value="${ingredient.amount}">
+                        <button type="button" class="remove-ingredient-btn bg-gradient-to-r from-rose-500 to-rose-600 text-white p-2.5 rounded-lg hover:from-rose-600 hover:to-rose-700 shadow-sm">
+                            <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                         </button>
                     </div>
                 `;
                 list.appendChild(row);
                 
-                // Aggiorna visibilità campo amount
                 const select = row.querySelector('.unit-select');
                 this.toggleAmountInput(select);
             },
             
             handleIngredientFormClick(e) {
-                // Rimuovi ingrediente
                 if (e.target.closest('.remove-ingredient-btn')) {
                     e.target.closest('.ingredient-row').remove();
                 }
-                // Toggle campo amount se si seleziona 'qb'
                 if (e.target.classList.contains('unit-select')) {
                     this.toggleAmountInput(e.target);
                 }
@@ -681,17 +739,15 @@
                 } else {
                     amountInput.style.visibility = 'visible';
                 }
-                select.dataset.unit = select.value; // Aggiorna per lo stile CSS
+                select.dataset.unit = select.value;
             },
 
             handleFormSubmit(e) {
                 e.preventDefault();
                 const button = document.getElementById('save-form-btn');
-                this.showButtonFeedback(button, 'Salvataggio...');
+                this.showButtonFeedback(button, '💾 Salvataggio...');
                 
                 const id = document.getElementById('recipe-id').value;
-                
-                // Raccogli ingredienti
                 const ingredients = [];
                 document.querySelectorAll('#ingredients-list .ingredient-row').forEach(row => {
                     const name = row.querySelector('.ing-name').value.trim();
@@ -718,27 +774,24 @@
                 };
 
                 if (id) {
-                    // Aggiorna
                     const index = this.recipes.findIndex(r => r.id === id);
                     this.recipes[index] = recipe;
                 } else {
-                    // Crea
-                    this.recipes.unshift(recipe); // Aggiungi in cima
+                    this.recipes.unshift(recipe);
                 }
 
                 this.saveRecipesToLocal();
                 this.renderRecipeList();
                 this.showView('list');
                 this.showNotification(`Ricetta "${recipe.name}" salvata!`);
-                // Il feedback 'Fatto!' non è necessario perché cambiamo vista
             },
 
-            // --- UTILITY ---
             showNotification(message, isError = false) {
                 const el = this.ui.notification;
                 el.textContent = message;
-                el.classList.toggle('bg-red-600', isError);
-                el.classList.toggle('bg-gray-900', !isError);
+                el.className = isError 
+                    ? 'fixed bottom-6 right-6 bg-gradient-to-r from-rose-900 to-rose-800 text-white px-6 py-4 rounded-xl shadow-2xl border-2 border-rose-700 font-medium'
+                    : 'fixed bottom-6 right-6 bg-gradient-to-r from-amber-900 to-amber-800 text-white px-6 py-4 rounded-xl shadow-2xl border-2 border-amber-700 font-medium';
                 
                 el.classList.add('show');
                 setTimeout(() => {
@@ -763,9 +816,7 @@
             }
         };
 
-        // Avvia l'applicazione
         window.addEventListener('DOMContentLoaded', () => app.init());
     </script>
-
 </body>
 </html>
