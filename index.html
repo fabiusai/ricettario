@@ -348,10 +348,6 @@
             searchTerm: '',
             dbUrl: 'https://raw.githubusercontent.com/fabiusai/ricettario/main/db.json',
             githubUrl: 'https://github.com/fabiusai/ricettario/blob/main/db.json',
-            
-            // *** MODIFICA QUI ***
-            // Usiamo un percorso relativo.
-            // Assicura che 'img/ricetta.png' esista nella tua cartella img.
             defaultImg: 'img/ricetta.png', 
 
             ui: {
@@ -590,8 +586,6 @@
                 this.renderRecipeList();
             },
 
-            // *** MODIFICA QUI ***
-            // Logica immagine semplificata e corretta
             renderRecipeView(id) {
                 const recipe = this.recipes.find(r => r.id === id);
                 if (!recipe) return;
@@ -603,7 +597,6 @@
                 
                 const img = document.getElementById('recipe-view-image');
                 
-                // 1. Imposta l'onerror per il fallback
                 img.onerror = () => {
                     if (img.src !== this.defaultImg) {
                         img.src = this.defaultImg;
@@ -613,18 +606,9 @@
                 
                 const recipeImageValue = recipe.image || '';
                 
-                // 2. Imposta la sorgente
-                // Se il valore è vuoto, usa defaultImg.
-                // Altrimenti, usa il valore (che sia URL completo o percorso relativo)
+                // Questa logica ora funziona perché il JSON salvato conterrà
+                // "img/brownie.png" (grazie alla modifica in handleFormSubmit)
                 img.src = recipeImageValue ? recipeImageValue : this.defaultImg;
-
-                // 3. Pulisci eventuali percorsi errati (come /img/file.png)
-                // Se l'URL non inizia con http E inizia con /... questo è un ERRORE
-                // e lo correggiamo rimuovendo il primo /
-                if (!img.src.startsWith('http') && img.src.startsWith('/')) {
-                    // Rimuove lo slash iniziale per renderlo un percorso relativo corretto
-                    img.src = img.src.substring(1);
-                }
                 
                 this.renderProcedure(recipe.procedure);
                 this.renderIngredients(recipe.ingredients, 1); 
@@ -829,7 +813,14 @@
                     document.getElementById('recipe-id').value = recipe.id;
                     document.getElementById('recipe-name').value = recipe.name;
                     document.getElementById('recipe-servings').value = recipe.servings;
-                    document.getElementById('recipe-image').value = recipe.image || '';
+                    
+                    // Mostra il percorso "pulito" nel form (es. "brownie.png")
+                    let imageValue = recipe.image || '';
+                    if (imageValue.startsWith('img/')) {
+                         imageValue = imageValue.substring(4); // Rimuove "img/"
+                    }
+                    document.getElementById('recipe-image').value = imageValue;
+                    
                     document.getElementById('recipe-procedure').value = recipe.procedure;
                     document.getElementById('recipe-tags').value = recipe.tags || '';
                     
@@ -893,6 +884,8 @@
                 select.dataset.unit = select.value;
             },
 
+            // *** MODIFICA QUI ***
+            // Questa funzione ora aggiunge 'img/' se non è un URL e non c'è già
             handleFormSubmit(e) {
                 e.preventDefault();
                 const button = document.getElementById('save-form-btn');
@@ -914,11 +907,12 @@
                     }
                 });
 
-                // *** MODIFICA QUI ***
-                // Assicurati che i percorsi relativi non inizino con /
                 let imagePath = document.getElementById('recipe-image').value.trim();
-                if (!imagePath.startsWith('http') && imagePath.startsWith('/')) {
-                    imagePath = imagePath.substring(1); // Rimuovi lo slash
+                
+                // Se imagePath non è vuoto, non è un URL, e non inizia già con "img/"
+                if (imagePath && !imagePath.startsWith('http') && !imagePath.startsWith('img/')) {
+                    // Aggiungi il prefisso
+                    imagePath = 'img/' + imagePath;
                 }
 
                 const recipe = {
@@ -976,6 +970,5 @@
 
         window.addEventListener('DOMContentLoaded', () => app.init());
     </script>
-
 </body>
 </html>
