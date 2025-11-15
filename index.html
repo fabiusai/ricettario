@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ricettario Web App</title>
+    <!-- Caricamento Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Favicon -->
+    <link rel="icon" href="favicon.ico">
+    
+    <!-- Font (Inter) e Stili Personalizzati -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Stili per la vista pulita/stampa */
+        .print-mode #recipe-view-header,
+        .print-mode #scaling-controls {
+            display: none;
+        }
+        
+        .print-mode #recipe-view {
+            box-shadow: none;
+            border: none;
+            margin-top: 0;
+            padding-top: 0;
+        }
+        
+        /* Stile per i campi "qb" (disabilita input numerico) */
+        select.unit-select[data-unit="qb"] ~ input.amount-input {
+            visibility: hidden;
+        }
+
+        /* Piccola animazione per la notifica */
+        #notification {
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+            transform: translateY(100%);
+            opacity: 0;
+        }
+        
+        #notification.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* Stili per le icone SVG */
+        .icon-sm {
+            width: 1.25rem; /* 20px */
+            height: 1.25rem; /* 20px */
+        }
+        .icon-xs {
+            width: 1rem; /* 16px */
+            height: 1rem; /* 16px */
+        }
+    </style>
+</head>
+
+<body class="bg-stone-50 text-gray-800">
+
+    <!-- Contenitore Principale -->
+    <div class="container max-w-5xl mx-auto p-4 md:p-6">
+
+        <header class="text-center mb-6 md:mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-yellow-800">Il mio Ricettario</h1>
+        </header>
+
+        <!-- AREA GESTIONE DATABASE (Vista Lista) -->
+        <main id="db-manager-view">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-700">Gestione Ricette</h2>
+                
+                <!-- Barra Strumenti -->
+                <div class="flex flex-col md:flex-row gap-2 mb-4">
+                    <input type="search" id="search-input" placeholder="Cerca ricetta..." class="flex-grow w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-600">
+                    <button id="add-recipe-btn" class="w-full md:w-auto bg-yellow-700 text-white px-5 py-3 rounded-lg font-medium hover:bg-yellow-800 transition-colors duration-150 flex items-center justify-center gap-2">
+                        <!-- Icona Plus -->
+                        <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        <span>Aggiungi</span>
+                    </button>
+                </div>
+
+                <!-- Strumenti DB -->
+                <div class="flex flex-col sm:flex-row gap-2 mb-4">
+                    <button id="load-db-btn" class="flex-1 bg-stone-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-stone-700 transition-colors duration-150 text-sm">
+                        Carica da db.json
+                    </button>
+                    <button id="save-github-btn" class="flex-1 bg-stone-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-stone-700 transition-colors duration-150 text-sm">
+                        Salva su GitHub (Copia)
+                    </button>
+                    <button id="export-json-btn" class="flex-1 bg-stone-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-stone-700 transition-colors duration-150 text-sm">
+                        Esporta JSON
+                    </button>
+                    <button id="reset-filters-btn" class="flex-1 bg-gray-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-600 transition-colors duration-150 text-sm hidden">
+                        Reset Filtri
+                    </button>
+                </div>
+
+                <!-- Lista Ricette -->
+                <div id="recipe-list-container" class="space-y-3">
+                    <!-- Le ricette verranno popolate qui da JS -->
+                    <p class="text-gray-500 text-center py-4">Caricamento ricette...</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- AREA VISUALIZZAZIONE RICETTA (Vista Singola) -->
+        <section id="recipe-view" class="hidden">
+            <!-- Intestazione Vista -->
+            <div id="recipe-view-header" class="flex justify-between items-center mb-4">
+                <button id="back-to-list-btn" class="bg-stone-200 text-stone-800 px-4 py-2 rounded-lg font-medium hover:bg-stone-300 transition-colors duration-150 flex items-center gap-2">
+                    <!-- Icona Freccia Sinistra -->
+                    <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    <span>Lista</span>
+                </button>
+                <button id="print-view-btn" class="bg-stone-200 text-stone-800 px-4 py-2 rounded-lg font-medium hover:bg-stone-300 transition-colors duration-150 flex items-center gap-2">
+                    <!-- Icona Stampa -->
+                    <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm7-8a1 1 0 01-1-1V5a1 1 0 00-1-1H9a1 1 0 00-1 1v4a1 1 0 01-1 1"></path></svg>
+                    <span>Vista Pulita</span>
+                </button>
+            </div>
+
+            <!-- Contenuto Ricetta -->
+            <div class="bg-white p-4 md:p-8 rounded-xl shadow-lg border border-gray-200">
+                
+                <h2 id="recipe-view-name" class="text-3xl md:text-4xl font-bold text-gray-800 mb-4"></h2>
+                
+                <img id="recipe-view-image" src="" alt="Immagine ricetta" class="w-full h-48 md:h-72 object-cover rounded-lg mb-6 border border-gray-200">
+                
+                <p class="text-base text-gray-600 mb-4 italic">
+                    Dosi originali per: <strong id="recipe-view-servings-original"></strong>
+                </p>
+
+                <!-- Controlli Scaling -->
+                <div id="scaling-controls" class="bg-yellow-50 p-4 rounded-lg border border-yellow-200 mb-6">
+                    <h3 class="text-lg font-semibold text-yellow-800 mb-3">Ricalcola Dosi</h3>
+                    <div class="flex flex-col md:flex-row gap-2">
+                        <input type="text" id="recipe-servings-input" placeholder="Es: 8 porzioni o 24 cm" class="flex-grow w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-600">
+                        <button id="scale-recipe-btn" class="w-full md:w-auto bg-yellow-700 text-white px-5 py-3 rounded-lg font-medium hover:bg-yellow-800 transition-colors duration-150">
+                            Ricalcola
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dettagli Ricetta -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Ingredienti -->
+                    <div class="md:col-span-1">
+                        <h3 class="text-2xl font-semibold text-gray-700 mb-3 border-b-2 border-yellow-600 pb-2">Ingredienti</h3>
+                        <ul id="recipe-view-ingredients" class="space-y-2 list-disc list-inside text-gray-700">
+                            <!-- Popolati da JS -->
+                        </ul>
+                    </div>
+                    
+                    <!-- Procedimento -->
+                    <div class="md:col-span-2">
+                        <h3 class="text-2xl font-semibold text-gray-700 mb-3 border-b-2 border-yellow-600 pb-2">Procedimento</h3>
+                        <div id="recipe-view-procedure" class="prose prose-lg text-gray-800 whitespace-pre-line">
+                            <!-- Popolato da JS -->
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- AREA MODIFICA/CREAZIONE RICETTA (Vista Form) -->
+        <section id="recipe-form-view" class="hidden">
+            <div class="bg-white p-4 md:p-8 rounded-xl shadow-lg border border-gray-200">
+                <h2 id="form-title" class="text-2xl font-semibold mb-6 text-gray-700">Nuova Ricetta</h2>
+                
+                <form id="recipe-form" class="space-y-5">
+                    <input type="hidden" id="recipe-id">
+                    
+                    <div>
+                        <label for="recipe-name" class="block text-sm font-medium text-gray-700 mb-1">Nome Ricetta</label>
+                        <input type="text" id="recipe-name" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-600" required>
+                    </div>
+                    
+                    <div>
+                        <label for="recipe-servings" class="block text-sm font-medium text-gray-700 mb-1">Porzioni / Teglia (Default: 20 cm)</label>
+                        <input type="text" id="recipe-servings" placeholder="Es: 8 porzioni, 24 cm" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-600" required>
+                    </div>
+                    
+                    <div>
+                        <label for="recipe-image" class="block text-sm font-medium text-gray-700 mb-1">URL Immagine</label>
+                        <input type="text" id="recipe-image" placeholder="Es: img/mia-torta.png" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-600">
+                    </div>
+
+                    <!-- Ingredienti Dinamici -->
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-700 mb-2">Ingredienti</h3>
+                        <div id="ingredients-list" class="space-y-2">
+                            <!-- Ingredienti popolati da JS -->
+                        </div>
+                        <button type="button" id="add-ingredient-btn" class="mt-2 bg-stone-200 text-stone-800 px-4 py-2 rounded-lg font-medium hover:bg-stone-300 transition-colors duration-150 text-sm">
+                            + Aggiungi Ingrediente
+                        </button>
+                    </div>
+                    
+                    <div>
+                        <label for="recipe-procedure" class="block text-sm font-medium text-gray-700 mb-1">Procedimento</label>
+                        <textarea id="recipe-procedure" rows="10" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-600" required></textarea>
+                    </div>
+                    
+                    <div>
+                        <label for="recipe-tags" class="block text-sm font-medium text-gray-700 mb-1">Tag (separati da virgola)</label>
+                        <input type="text" id="recipe-tags" placeholder="Es: dolci, colazione, facile" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-600">
+                    </div>
+                    
+                    <!-- Pulsanti Form -->
+                    <div class="flex gap-3 pt-4 border-t border-gray-200">
+                        <button type="button" id="cancel-form-btn" class="flex-1 bg-stone-200 text-stone-800 px-5 py-3 rounded-lg font-medium hover:bg-stone-300 transition-colors duration-150">
+                            Annulla
+                        </button>
+                        <button type="submit" id="save-form-btn" class="flex-1 bg-yellow-700 text-white px-5 py-3 rounded-lg font-medium hover:bg-yellow-800 transition-colors duration-150">
+                            Salva Ricetta
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+    </div> <!-- Fine Contenitore Principale -->
+
+    <!-- Notifica Toast -->
+    <div id="notification" class="fixed bottom-4 right-4 bg-gray-900 text-white px-5 py-3 rounded-lg shadow-lg">
+        Messaggio di notifica
+    </div>
+
+    <!-- SCRIPT PRINCIPALE APP -->
+    <script>
+        const app = {
+            // --- STATO ---
+            recipes: [],
+            currentView: 'list', // 'list', 'view', 'edit'
+            currentRecipeId: null,
+            activeTag: null,
+            searchTerm: '',
+            dbUrl: 'https://raw.githubusercontent.com/fabiusai/ricettario/main/db.json', // Path al db.json (raw GitHub)
+            githubUrl: 'https://github.com/fabiusai/ricettario/blob/main/db.json',
+            defaultImg: 'https://raw.githubusercontent.com/fabiusai/ricettario/main/img/ricetta.png',
+
+            // --- ELEMENTI UI ---
+            ui: {
+                views: {
+                    list: document.getElementById('db-manager-view'),
+                    view: document.getElementById('recipe-view'),
+                    form: document.getElementById('recipe-form-view'),
+                },
+                recipeListContainer: document.getElementById('recipe-list-container'),
+                searchInput: document.getElementById('search-input'),
+                resetFiltersBtn: document.getElementById('reset-filters-btn'),
+                notification: document.getElementById('notification'),
+                // ... (altri elementi verranno presi al bisogno)
+            },
+
+            // --- INIZIALIZZAZIONE ---
+            init() {
+                // Caricamento iniziale
+                this.getRecipesFromLocal();
+                if (this.recipes.length === 0) {
+                    // Se localStorage è vuoto, prova a caricare da db.json
+                    this.fetchRecipes(document.getElementById('load-db-btn'));
+                } else {
+                    this.renderRecipeList();
+                }
+
+                // Event Listeners Principali
+                document.getElementById('add-recipe-btn').addEventListener('click', () => this.renderRecipeForm(null));
+                document.getElementById('load-db-btn').addEventListener('click', (e) => this.fetchRecipes(e.currentTarget));
+                document.getElementById('save-github-btn').addEventListener('click', (e) => this.handleSaveToGitHub(e.currentTarget));
+                document.getElementById('export-json-btn').addEventListener('click', (e) => this.handleExportJson(e.currentTarget));
+                this.ui.searchInput.addEventListener('input', (e) => this.handleSearch(e));
+                this.ui.resetFiltersBtn.addEventListener('click', () => this.resetFilters());
+                
+                // Event Delegation per la lista ricette
+                this.ui.recipeListContainer.addEventListener('click', (e) => this.handleRecipeListClick(e));
+
+                // Listeners Vista Singola
+                document.getElementById('back-to-list-btn').addEventListener('click', () => this.showView('list'));
+                document.getElementById('scale-recipe-btn').addEventListener('click', (e) => this.handleScaleRecipe(e.currentTarget));
+                document.getElementById('print-view-btn').addEventListener('click', (e) => this.handlePrintView(e.currentTarget));
+
+                // Listeners Form
+                document.getElementById('recipe-form').addEventListener('submit', (e) => this.handleFormSubmit(e));
+                document.getElementById('cancel-form-btn').addEventListener('click', () => this.showView('list'));
+                document.getElementById('add-ingredient-btn').addEventListener('click', () => this.addIngredientRow());
+                document.getElementById('ingredients-list').addEventListener('click', (e) => this.handleIngredientFormClick(e));
+            },
+
+            // --- GESTIONE VISTE ---
+            showView(viewName) {
+                this.currentView = viewName;
+                Object.values(this.ui.views).forEach(view => view.classList.add('hidden'));
+                if (this.ui.views[viewName]) {
+                    this.ui.views[viewName].classList.remove('hidden');
+                }
+                window.scrollTo(0, 0); // Torna su
+                
+                // Resetta la modalità stampa
+                document.body.classList.remove('print-mode');
+                document.getElementById('print-view-btn').textContent = "Vista Pulita";
+            },
+
+            // --- GESTIONE DATI (LocalStorage & Fetch) ---
+            saveRecipesToLocal() {
+                localStorage.setItem('ricettarioDB', JSON.stringify(this.recipes));
+            },
+
+            getRecipesFromLocal() {
+                try {
+                    this.recipes = JSON.parse(localStorage.getItem('ricettarioDB') || '[]');
+                } catch (e) {
+                    console.error("Errore parsing localStorage:", e);
+                    this.recipes = [];
+                }
+            },
+
+            async fetchRecipes(button) {
+                if (button) this.showButtonFeedback(button, 'Caricamento...', 99999);
+                try {
+                    const response = await fetch(`${this.dbUrl}?t=${new Date().getTime()}`, {
+                        cache: 'no-store' // Forza il non uso della cache
+                    });
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    const data = await response.json();
+                    this.recipes = Array.isArray(data) ? data : [];
+                    this.saveRecipesToLocal();
+                    this.renderRecipeList();
+                    if (button) this.showButtonFeedback(button, 'Fatto!', 1500, true);
+                    this.showNotification('Database caricato da db.json');
+                } catch (error) {
+                    console.error('Errore caricamento db.json:', error);
+                    if (button) this.showButtonFeedback(button, 'Errore!', 2000, true);
+                    this.showNotification('Errore caricamento db.json', true);
+                }
+            },
+
+            handleSaveToGitHub(button) {
+                try {
+                    const dbJson = JSON.stringify(this.recipes, null, 2);
+                    // Hack per copiare negli appunti (navigator.clipboard non funziona in iframe)
+                    const textarea = document.createElement('textarea');
+                    textarea.value = dbJson;
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = 0;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+
+                    this.showButtonFeedback(button, 'Copiato!', 2000);
+                    this.showNotification('DB Copiato! Ora incollalo su GitHub.');
+                    
+                    // Apri la pagina di GitHub
+                    window.open(this.githubUrl, '_blank');
+                } catch (e) {
+                    console.error("Errore copia clipboard:", e);
+                    this.showButtonFeedback(button, 'Errore!', 2000, true);
+                    this.showNotification('Errore durante la copia.', true);
+                }
+            },
+            
+            handleExportJson(button) {
+                this.showButtonFeedback(button, 'Esporto...', 99999);
+                try {
+                    const dbJson = JSON.stringify(this.recipes, null, 2);
+                    const blob = new Blob([dbJson], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'db.json';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
+                    this.showButtonFeedback(button, 'Esportato!', 1500, true);
+                } catch (e) {
+                    console.error("Errore esportazione JSON:", e);
+                    this.showButtonFeedback(button, 'Errore!', 2000, true);
+                    this.showNotification('Errore durante l\'esportazione.', true);
+                }
+            },
+
+            // --- RENDERING LISTA RICETTE ---
+            renderRecipeList() {
+                this.ui.recipeListContainer.innerHTML = ''; // Svuota
+                
+                const filteredRecipes = this.recipes.filter(recipe => {
+                    const matchesTag = !this.activeTag || (recipe.tags && recipe.tags.toLowerCase().split(',').map(t => t.trim()).includes(this.activeTag));
+                    
+                    const term = this.searchTerm.toLowerCase();
+                    const matchesSearch = !term || (
+                        recipe.name.toLowerCase().includes(term) ||
+                        (recipe.procedure && recipe.procedure.toLowerCase().includes(term)) || // Aggiunto controllo esistenza
+                        (recipe.tags && recipe.tags.toLowerCase().includes(term)) || // Aggiunto controllo esistenza
+                        (recipe.ingredients && recipe.ingredients.some(i => i.name.toLowerCase().includes(term))) // Aggiunto controllo esistenza
+                    );
+                    
+                    return matchesTag && matchesSearch;
+                });
+
+                // Aggiorna visibilità bottone reset
+                if (this.activeTag || this.searchTerm) {
+                    this.ui.resetFiltersBtn.classList.remove('hidden');
+                } else {
+                    this.ui.resetFiltersBtn.classList.add('hidden');
+                }
+
+                if (filteredRecipes.length === 0) {
+                    this.ui.recipeListContainer.innerHTML = `<p class="text-gray-500 text-center py-4">Nessuna ricetta trovata.</p>`;
+                    return;
+                }
+
+                filteredRecipes.forEach(recipe => {
+                    const tagsHtml = (recipe.tags || '')
+                        .split(',')
+                        .filter(tag => tag.trim() !== '')
+                        .map(tag => `
+                            <button class="tag-btn bg-yellow-100 text-yellow-800 rounded-full px-3 py-1 text-sm font-medium hover:bg-yellow-200 transition-colors" data-tag="${tag.trim().toLowerCase()}">
+                                ${tag.trim()}
+                            </button>
+                        `).join(' ');
+
+                    const recipeEl = document.createElement('div');
+                    recipeEl.className = 'bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col md:flex-row md:justify-between md:items-center gap-3';
+                    recipeEl.innerHTML = `
+                        <div class="flex-grow">
+                            <h3 class="text-xl font-semibold text-gray-800">${recipe.name}</h3>
+                            <div class="flex flex-wrap gap-2 mt-2">
+                                ${tagsHtml}
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0 flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                            <button data-action="view" data-id="${recipe.id}" class="w-full sm:w-auto bg-stone-200 text-stone-800 px-4 py-2 rounded-lg font-medium hover:bg-stone-300 transition-colors text-sm flex items-center justify-center gap-1.5">
+                                <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                Visualizza
+                            </button>
+                            <button data-action="edit" data-id="${recipe.id}" class="w-full sm:w-auto bg-stone-200 text-stone-800 px-4 py-2 rounded-lg font-medium hover:bg-stone-300 transition-colors text-sm flex items-center justify-center gap-1.5">
+                                <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path></svg>
+                                Modifica
+                            </button>
+                            <button data-action="delete" data-id="${recipe.id}" class="w-full sm:w-auto bg-red-200 text-red-800 px-4 py-2 rounded-lg font-medium hover:bg-red-300 transition-colors text-sm flex items-center justify-center gap-1.5">
+                                <svg class="icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                Elimina
+                            </button>
+                        </div>
+                    `;
+                    this.ui.recipeListContainer.appendChild(recipeEl);
+                });
+            },
+
+            handleRecipeListClick(e) {
+                const viewBtn = e.target.closest('[data-action="view"]');
+                const editBtn = e.target.closest('[data-action="edit"]');
+                const deleteBtn = e.target.closest('[data-action="delete"]');
+                const tagBtn = e.target.closest('.tag-btn');
+
+                if (viewBtn) {
+                    this.renderRecipeView(viewBtn.dataset.id);
+                } else if (editBtn) {
+                    this.renderRecipeForm(editBtn.dataset.id);
+                } else if (deleteBtn) {
+                    this.deleteRecipe(deleteBtn.dataset.id, deleteBtn);
+                } else if (tagBtn) {
+                    this.filterByTag(tagBtn.dataset.tag);
+                }
+            },
+            
+            deleteRecipe(id, button) {
+                // In un'app reale, si userebbe un modal. Qui eliminiamo direttamente.
+                this.recipes = this.recipes.filter(r => r.id !== id);
+                this.saveRecipesToLocal();
+                this.renderRecipeList();
+                this.showNotification('Ricetta eliminata');
+            },
+            
+            handleSearch(e) {
+                this.searchTerm = e.target.value.toLowerCase();
+                this.renderRecipeList();
+            },
+            
+            filterByTag(tag) {
+                this.activeTag = tag;
+                this.renderRecipeList();
+            },
+
+            resetFilters() {
+                this.activeTag = null;
+                this.searchTerm = '';
+                this.ui.searchInput.value = '';
+                this.renderRecipeList();
+            },
+
+            // --- RENDERING VISTA SINGOLA & SCALING ---
+            renderRecipeView(id) {
+                const recipe = this.recipes.find(r => r.id === id);
+                if (!recipe) return;
+
+                this.currentRecipeId = id;
+
+                document.getElementById('recipe-view-name').textContent = recipe.name;
+                document.getElementById('recipe-view-servings-original').textContent = recipe.servings;
+                document.getElementById('recipe-servings-input').value = recipe.servings;
+                
+                const img = document.getElementById('recipe-view-image');
+                img.src = recipe.image || this.defaultImg;
+                img.onerror = () => { img.src = this.defaultImg; };
+                
+                document.getElementById('recipe-view-procedure').textContent = recipe.procedure;
+                
+                this.renderIngredients(recipe.ingredients, 1);
+                this.showView('view');
+            },
+
+            renderIngredients(ingredients, scaleFactor) {
+                const container = document.getElementById('recipe-view-ingredients');
+                container.innerHTML = '';
+                
+                if (!ingredients) return; // Controllo di sicurezza
+
+                ingredients.forEach(ing => {
+                    let amountText;
+                    if (ing.unit === 'qb') {
+                        amountText = 'q.b.';
+                    } else {
+                        const amount = parseFloat(ing.amount) * scaleFactor;
+                        // Arrotonda in modo intelligente
+                        amountText = (amount < 10 ? amount.toFixed(1) : amount.toFixed(0)) + ` ${ing.unit}`;
+                    }
+                    
+                    const li = document.createElement('li');
+                    li.className = "ml-4";
+                    li.innerHTML = `<strong class="font-medium">${ing.name}</strong>: ${amountText}`;
+                    container.appendChild(li);
+                });
+            },
+            
+            parseServings(servingsStr) {
+                if (!servingsStr) return { value: 0, type: 'unknown' };
+                const str = servingsStr.toLowerCase();
+                const num = parseFloat(str.replace(',', '.'));
+                
+                if (isNaN(num)) return { value: 0, type: 'unknown' };
+
+                let type;
+                if (str.includes('teglia') || str.includes('cm')) {
+                    type = 'teglia';
+                } else if (str.includes('porzion')) { // 'porzione' o 'porzioni'
+                    type = 'porzioni';
+                } else {
+                    type = 'porzioni'; // Default
+                }
+                return { value: num, type: type };
+            },
+
+            handleScaleRecipe(button) {
+                this.showButtonFeedback(button, 'Calcolo...');
+                const recipe = this.recipes.find(r => r.id === this.currentRecipeId);
+                const original = this.parseServings(recipe.servings);
+                const targetStr = document.getElementById('recipe-servings-input').value;
+                const target = this.parseServings(targetStr);
+                
+                let scaleFactor = 1;
+
+                if (original.type === 'unknown' || target.type === 'unknown' || original.value === 0) {
+                    this.showNotification('Dati originali non validi per il calcolo', true);
+                    this.showButtonFeedback(button, 'Errore!', 2000, true);
+                    return;
+                }
+                
+                if (original.type !== target.type) {
+                    this.showNotification('Non è possibile convertire teglie in porzioni', true);
+                    this.showButtonFeedback(button, 'Errore!', 2000, true);
+                    return;
+                }
+
+                if (original.type === 'porzioni') {
+                    scaleFactor = target.value / original.value;
+                } else if (original.type === 'teglia') {
+                    // Calcolo area (assumendo teglie tonde/quadrate)
+                    scaleFactor = (target.value * target.value) / (original.value * original.value);
+                }
+                
+                this.renderIngredients(recipe.ingredients, scaleFactor);
+                this.showButtonFeedback(button, 'Fatto!', 1500, true);
+            },
+            
+            handlePrintView(button) {
+                document.body.classList.toggle('print-mode');
+                if (document.body.classList.contains('print-mode')) {
+                    button.innerHTML = `
+                        <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        <span>Mostra Controlli</span>`;
+                } else {
+                    button.innerHTML = `
+                        <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm7-8a1 1 0 01-1-1V5a1 1 0 00-1-1H9a1 1 0 00-1 1v4a1 1 0 01-1 1"></path></svg>
+                        <span>Vista Pulita</span>`;
+                }
+            },
+
+            // --- RENDERING & GESTIONE FORM ---
+            renderRecipeForm(id) {
+                const form = document.getElementById('recipe-form');
+                form.reset(); // Pulisce il form
+                document.getElementById('ingredients-list').innerHTML = '';
+                
+                if (id) {
+                    // Modalità Modifica
+                    const recipe = this.recipes.find(r => r.id === id);
+                    document.getElementById('form-title').textContent = 'Modifica Ricetta';
+                    document.getElementById('recipe-id').value = recipe.id;
+                    document.getElementById('recipe-name').value = recipe.name;
+                    document.getElementById('recipe-servings').value = recipe.servings;
+                    document.getElementById('recipe-image').value = recipe.image || '';
+                    document.getElementById('recipe-procedure').value = recipe.procedure;
+                    document.getElementById('recipe-tags').value = recipe.tags || '';
+                    
+                    if (recipe.ingredients) { // Controllo sicurezza
+                        recipe.ingredients.forEach(ing => this.addIngredientRow(ing));
+                    }
+                } else {
+                    // Modalità Creazione
+                    document.getElementById('form-title').textContent = 'Nuova Ricetta';
+                    document.getElementById('recipe-id').value = '';
+                    document.getElementById('recipe-servings').value = '20 cm'; // Default
+                    // Aggiungi un ingrediente vuoto
+                    this.addIngredientRow();
+                }
+                this.showView('form');
+            },
+
+            addIngredientRow(ingredient = { name: '', amount: '', unit: 'g' }) {
+                const list = document.getElementById('ingredients-list');
+                const row = document.createElement('div');
+                row.className = 'ingredient-row flex flex-col sm:flex-row gap-2 items-center';
+                
+                row.innerHTML = `
+                    <input type-="text" class="ing-name flex-grow w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Ingrediente" value="${ingredient.name}" required>
+                    <div class="flex-shrink-0 flex gap-2 w-full sm:w-auto">
+                        <select class="unit-select w-20 border border-gray-300 rounded-lg px-3 py-2" data-unit="${ingredient.unit}">
+                            <option value="g" ${ingredient.unit === 'g' ? 'selected' : ''}>g</option>
+                            <option value="qb" ${ingredient.unit === 'qb' ? 'selected' : ''}>q.b.</option>
+                        </select>
+                        <input type="number" class="amount-input w-24 border border-gray-300 rounded-lg px-3 py-2" placeholder="Peso" value="${ingredient.amount}">
+                        <button type="button" class="remove-ingredient-btn bg-red-200 text-red-800 p-2 rounded-lg hover:bg-red-300">
+                            <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                `;
+                list.appendChild(row);
+                
+                // Aggiorna visibilità campo amount
+                const select = row.querySelector('.unit-select');
+                this.toggleAmountInput(select);
+            },
+            
+            handleIngredientFormClick(e) {
+                // Rimuovi ingrediente
+                if (e.target.closest('.remove-ingredient-btn')) {
+                    e.target.closest('.ingredient-row').remove();
+                }
+                // Toggle campo amount se si seleziona 'qb'
+                if (e.target.classList.contains('unit-select')) {
+                    this.toggleAmountInput(e.target);
+                }
+            },
+            
+            toggleAmountInput(select) {
+                const row = select.closest('.ingredient-row');
+                const amountInput = row.querySelector('.amount-input');
+                if (select.value === 'qb') {
+                    amountInput.style.visibility = 'hidden';
+                    amountInput.value = '';
+                } else {
+                    amountInput.style.visibility = 'visible';
+                }
+                select.dataset.unit = select.value; // Aggiorna per lo stile CSS
+            },
+
+            handleFormSubmit(e) {
+                e.preventDefault();
+                const button = document.getElementById('save-form-btn');
+                this.showButtonFeedback(button, 'Salvataggio...');
+                
+                const id = document.getElementById('recipe-id').value;
+                
+                // Raccogli ingredienti
+                const ingredients = [];
+                document.querySelectorAll('#ingredients-list .ingredient-row').forEach(row => {
+                    const name = row.querySelector('.ing-name').value.trim();
+                    const unit = row.querySelector('.unit-select').value;
+                    const amount = row.querySelector('.amount-input').value;
+                    
+                    if (name) {
+                        ingredients.push({
+                            name: name,
+                            amount: unit === 'qb' ? '' : amount,
+                            unit: unit
+                        });
+                    }
+                });
+
+                const recipe = {
+                    id: id || Date.now().toString(),
+                    name: document.getElementById('recipe-name').value.trim(),
+                    servings: document.getElementById('recipe-servings').value.trim() || '20 cm',
+                    image: document.getElementById('recipe-image').value.trim(),
+                    procedure: document.getElementById('recipe-procedure').value.trim(),
+                    tags: document.getElementById('recipe-tags').value.trim(),
+                    ingredients: ingredients
+                };
+
+                if (id) {
+                    // Aggiorna
+                    const index = this.recipes.findIndex(r => r.id === id);
+                    this.recipes[index] = recipe;
+                } else {
+                    // Crea
+                    this.recipes.unshift(recipe); // Aggiungi in cima
+                }
+
+                this.saveRecipesToLocal();
+                this.renderRecipeList();
+                this.showView('list');
+                this.showNotification(`Ricetta "${recipe.name}" salvata!`);
+                // Il feedback 'Fatto!' non è necessario perché cambiamo vista
+            },
+
+            // --- UTILITY ---
+            showNotification(message, isError = false) {
+                const el = this.ui.notification;
+                el.textContent = message;
+                el.classList.toggle('bg-red-600', isError);
+                el.classList.toggle('bg-gray-900', !isError);
+                
+                el.classList.add('show');
+                setTimeout(() => {
+                    el.classList.remove('show');
+                }, 3000);
+            },
+
+            showButtonFeedback(button, message, duration = 1500, forceOriginal = false) {
+                if (!button.dataset.originalText && !forceOriginal) {
+                    button.dataset.originalText = button.innerHTML;
+                }
+                button.innerHTML = message;
+                button.disabled = true;
+
+                setTimeout(() => {
+                    if (button.dataset.originalText) {
+                        button.innerHTML = button.dataset.originalText;
+                        delete button.dataset.originalText;
+                    }
+                    button.disabled = false;
+                }, duration);
+            }
+        };
+
+        // Avvia l'applicazione
+        window.addEventListener('DOMContentLoaded', () => app.init());
+    </script>
+
+</body>
+</html>
