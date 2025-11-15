@@ -367,6 +367,9 @@
                 document.getElementById('cancel-form-btn').addEventListener('click', () => this.showView('list'));
                 document.getElementById('add-ingredient-btn').addEventListener('click', () => this.addIngredientRow());
                 document.getElementById('ingredients-list').addEventListener('click', (e) => this.handleIngredientFormClick(e));
+                
+                // MODIFICA 3: Aggiunto listener per il ricalcolo da ingrediente
+                document.getElementById('recipe-view-ingredients').addEventListener('change', (e) => this.handleIngredientScaleChange(e));
             },
 
             showView(viewName) {
@@ -571,37 +574,64 @@
                 document.getElementById('recipe-view-servings-original').textContent = recipe.servings;
                 document.getElementById('recipe-servings-input').value = recipe.servings;
                 
+                // MODIFICA 2: Logica immagine aggiornata
                 const img = document.getElementById('recipe-view-image');
-                img.src = recipe.image || this.defaultImg;
-                img.onerror = () => { img.src = this.defaultImg; };
+                img.src = recipe.image || this.defaultImg; // Usa default SOLO se recipe.image è vuoto
+                img.onerror = null; // NON usare fallback se il link custom è rotto
                 
                 document.getElementById('recipe-view-procedure').textContent = recipe.procedure;
-                this.renderIngredients(recipe.ingredients, 1);
+                this.renderIngredients(recipe.ingredients, 1); // Renderizza con fattore 1
                 this.showView('view');
             },
 
+            // MODIFICA 3: Funzione RENDER INGREDIENTS riscritta per ricalcolo
             renderIngredients(ingredients, scaleFactor) {
                 const container = document.getElementById('recipe-view-ingredients');
                 container.innerHTML = '';
                 
                 if (!ingredients) return;
 
-                ingredients.forEach(ing => {
-                    let amountText;
-                    if (ing.unit === 'qb') {
-                        amountText = 'q.b.';
-                    } else {
-                        const amount = parseFloat(ing.amount) * scaleFactor;
-                        amountText = (amount < 10 ? amount.toFixed(1) : amount.toFixed(0)) + ` ${ing.unit}`;
-                    }
-                    
+                ingredients.forEach((ing, index) => {
                     const li = document.createElement('li');
-                    li.className = "flex items-start gap-3 p-2 rounded-lg hover:bg-amber-100/50 transition-colors";
+                    li.className = "flex items-center gap-3 p-2";
+                    
+                    let amountInputHtml;
+                    const originalAmount = parseFloat(ing.amount);
+                    // Un ingrediente è scalabile se ha unità 'g' o 'pz' e un valore numerico valido
+                    const isScalable = (ing.unit === 'g' || ing.unit === 'pz') && !isNaN(originalAmount);
+
+                    if (ing.unit === 'qb') {
+                        amountInputHtml = `<span class="font-semibold text-amber-900 w-24 text-right">q.b.</span>`;
+                    } else if (isScalable) {
+                        const scaledAmount = originalAmount * scaleFactor;
+                        
+                        let displayAmount;
+                        // MODIFICA 1: Arrotonda 'pz'
+                        if (ing.unit === 'pz') {
+                            displayAmount = Math.round(scaledAmount);
+                        } else {
+                            displayAmount = (scaledAmount < 10) ? scaledAmount.toFixed(1) : scaledAmount.toFixed(0);
+                        }
+                        
+                        amountInputHtml = `
+                            <input type="number" 
+                                   class="ingredient-scale-input w-20 text-right border-2 border-amber-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-500" 
+                                   value="${displayAmount}" 
+                                   data-index="${index}"
+                                   data-original-amount="${originalAmount}"
+                                   data-unit="${ing.unit}">
+                        `;
+                    } else {
+                        // Per ingredienti non scalabili (es. "un pizzico")
+                        amountInputHtml = `<span class="font-semibold text-amber-900 w-24 text-right">${ing.amount || ''}</span>`;
+                    }
+
                     li.innerHTML = `
                         <span class="text-amber-600 text-lg mt-0.5">•</span>
-                        <div class="flex-1">
-                            <span class="font-semibold text-amber-900">${ing.name}</span>
-                            <span class="text-amber-800/80 ml-2">${amountText}</span>
+                        <span class="flex-1 font-semibold text-amber-900">${ing.name}</span>
+                        <div class="flex-shrink-0 flex items-center gap-2">
+                            ${amountInputHtml}
+                            <span class="w-8 text-amber-800/80">${ing.unit}</span>
                         </div>
                     `;
                     container.appendChild(li);
@@ -653,8 +683,61 @@
                     scaleFactor = (target.value * target.value) / (original.value * original.value);
                 }
                 
+                // MODIFICA 3: renderIngredients ora popola gli input con i valori scalati
                 this.renderIngredients(recipe.ingredients, scaleFactor);
                 this.showButtonFeedback(button, 'Fatto!', 1500, true);
+            },
+
+            // MODIFICA 3: Nuova funzione per ricalcolare partendo da un ingrediente
+            handleIngredientScaleChange(e) {
+                const input = e.target;
+                if (!input.classList.contains('ingredient-scale-input')) return;
+
+                const newValue = parseFloat(input.value);
+                const originalValue = parseFloat(input.dataset.originalAmount);
+                const unit = input.dataset.unit;
+                
+                if (isNaN(newValue) || isNaN(originalValue) || originalValue === 0) {
+                    // Reset
+                    input.value = (unit === 'pz') ? Math.round(originalValue) : originalValue.toFixed(1);
+                    return;
+                }
+                
+                // 1. Calcola il nuovo fattore di scala
+                const scaleFactor = newValue / originalValue;
+                
+                // 2. Aggiorna tutti gli ALTRI input
+                document.querySelectorAll('.ingredient-scale-input').forEach(otherInput => {
+                    if (otherInput === input) return; // Salta l'input che è stato modificato
+                    
+                    const otherOriginal = parseFloat(otherInput.dataset.originalAmount);
+                    const otherUnit = otherInput.dataset.unit;
+                    const newScaledValue = otherOriginal * scaleFactor;
+                    
+                    if (otherUnit === 'pz') {
+                        otherInput.value = Math.round(newScaledValue);
+                    } else {
+                        otherInput.value = (newScaledValue < 10) ? newScaledValue.toFixed(1) : newScaledValue.toFixed(0);
+                    }
+                });
+                
+                // 3. Aggiorna il campo porzioni/teglia
+                const recipe = this.recipes.find(r => r.id === this.currentRecipeId);
+                const originalServings = this.parseServings(recipe.servings);
+                
+                if (originalServings.type !== 'unknown' && originalServings.value !== 0) {
+                    let newServingsValue;
+                    if (originalServings.type === 'porzioni') {
+                        newServingsValue = originalServings.value * scaleFactor;
+                    } else if (originalServings.type === 'teglia') {
+                        // Per le teglie, si scala con l'area (r^2)
+                        const newArea = (originalServings.value * originalServings.value) * scaleFactor;
+                        newServingsValue = Math.sqrt(newArea);
+                    }
+                    
+                    document.getElementById('recipe-servings-input').value = 
+                        `${newServingsValue.toFixed(1)} ${originalServings.type.replace('teglia', 'cm')}`;
+                }
             },
             
             handlePrintView(button) {
@@ -702,14 +785,16 @@
                 const row = document.createElement('div');
                 row.className = 'ingredient-row flex flex-col sm:flex-row gap-2 items-center bg-white p-3 rounded-lg border-2 border-amber-200/50';
                 
+                // MODIFICA 1: Aggiunta opzione 'pz'
                 row.innerHTML = `
                     <input type="text" class="ing-name flex-grow w-full border-2 border-amber-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="Nome ingrediente" value="${ingredient.name}" required>
                     <div class="flex-shrink-0 flex gap-2 w-full sm:w-auto">
                         <select class="unit-select w-20 border-2 border-amber-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500" data-unit="${ingredient.unit}">
                             <option value="g" ${ingredient.unit === 'g' ? 'selected' : ''}>g</option>
+                            <option value="pz" ${ingredient.unit === 'pz' ? 'selected' : ''}>pz</option>
                             <option value="qb" ${ingredient.unit === 'qb' ? 'selected' : ''}>q.b.</option>
                         </select>
-                        <input type="number" class="amount-input w-24 border-2 border-amber-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="Peso" value="${ingredient.amount}">
+                        <input type="number" class="amount-input w-24 border-2 border-amber-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="Quantità" value="${ingredient.amount}">
                         <button type="button" class="remove-ingredient-btn bg-gradient-to-r from-rose-500 to-rose-600 text-white p-2.5 rounded-lg hover:from-rose-600 hover:to-rose-700 shadow-sm">
                             <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                         </button>
@@ -736,8 +821,10 @@
                 if (select.value === 'qb') {
                     amountInput.style.visibility = 'hidden';
                     amountInput.value = '';
+                    amountInput.placeholder = 'Peso';
                 } else {
                     amountInput.style.visibility = 'visible';
+                    amountInput.placeholder = select.value === 'pz' ? 'Numero' : 'Peso';
                 }
                 select.dataset.unit = select.value;
             },
