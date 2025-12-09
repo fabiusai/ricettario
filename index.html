@@ -136,13 +136,11 @@
             font-size: 1.5rem;
         }
 
-        /* *** MODIFICHE MODALITÀ VISTA PULITA *** */
         .print-mode .ingredient-scale-input {
             border-color: transparent;
             background-color: transparent;
-            pointer-events: none; /* Non cliccabile */
+            pointer-events: none;
         }
-        /* Nasconde frecce input numero */
         .print-mode .ingredient-scale-input::-webkit-outer-spin-button,
         .print-mode .ingredient-scale-input::-webkit-inner-spin-button {
             -webkit-appearance: none;
@@ -184,10 +182,10 @@
 
                 <div class="flex flex-col sm:flex-row gap-2 mb-6 p-4 bg-amber-50/50 rounded-xl border border-amber-200/50">
                     <button id="load-db-btn" class="flex-1 bg-white border-2 border-amber-300 text-amber-900 px-4 py-2.5 rounded-lg font-medium hover:bg-amber-50 transition-all text-sm shadow-sm">
-                        📥 Carica da db.json
+                        🔄 Sincronizza Cloud
                     </button>
                     <button id="save-github-btn" class="flex-1 bg-white border-2 border-amber-300 text-amber-900 px-4 py-2.5 rounded-lg font-medium hover:bg-amber-50 transition-all text-sm shadow-sm">
-                        📤 Salva su GitHub
+                        📤 Backup (Copia JSON)
                     </button>
                     <button id="export-json-btn" class="flex-1 bg-white border-2 border-amber-300 text-amber-900 px-4 py-2.5 rounded-lg font-medium hover:bg-amber-50 transition-all text-sm shadow-sm">
                         💾 Esporta JSON
@@ -346,6 +344,12 @@
             currentRecipeId: null,
             activeTag: null,
             searchTerm: '',
+            
+            // =================================================================
+            // 👇👇👇 INCOLLA QUI IL TUO URL DELLO SCRIPT GOOGLE 👇👇👇
+            scriptUrl: 'https://script.google.com/macros/s/AKfycbyRf6TDpgUokFiMpJiyAIbX-YZZdu-HxHcoi3wkc2fEl4C7_9l4p5MA9IBqVcWIoO_Y/exec', 
+            // =================================================================
+            
             dbUrl: 'https://raw.githubusercontent.com/fabiusai/ricettario/main/db.json',
             githubUrl: 'https://github.com/fabiusai/ricettario/blob/main/db.json',
             defaultImg: 'img/ricetta.png', 
@@ -422,20 +426,26 @@
             async fetchRecipes(button) {
                 if (button) this.showButtonFeedback(button, 'Caricamento...', 99999);
                 try {
-                    const response = await fetch(`${this.dbUrl}?t=${new Date().getTime()}`, {
-                        cache: 'no-store'
-                    });
+                    // Chiamata GET allo script di Google
+                    const response = await fetch(this.scriptUrl);
+                    
                     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    
                     const data = await response.json();
                     this.recipes = Array.isArray(data) ? data : [];
                     this.saveRecipesToLocal();
                     this.renderRecipeList();
+                    
                     if (button) this.showButtonFeedback(button, 'Fatto!', 1500, true);
-                    this.showNotification('Database caricato da db.json');
+                    this.showNotification('Ricette sincronizzate con il Cloud');
                 } catch (error) {
-                    console.error('Errore caricamento db.json:', error);
-                    if (button) this.showButtonFeedback(button, 'Errore!', 2000, true);
-                    this.showNotification('Errore caricamento db.json', true);
+                    console.error('Errore caricamento:', error);
+                    // Fallback
+                    this.getRecipesFromLocal();
+                    this.renderRecipeList();
+                    
+                    if (button) this.showButtonFeedback(button, 'Offline', 2000, true);
+                    this.showNotification('Impossibile connettersi. Uso dati locali.', true);
                 }
             },
 
@@ -451,8 +461,8 @@
                     document.execCommand('copy');
                     document.body.removeChild(textarea);
                     this.showButtonFeedback(button, 'Copiato!', 2000);
-                    this.showNotification('DB Copiato! Ora incollalo su GitHub.');
-                    window.open(this.githubUrl, '_blank');
+                    this.showNotification('DB Copiato negli appunti!');
+                    // Non apro più la pagina github automaticamente, è solo un backup
                 } catch (e) {
                     console.error("Errore copia clipboard:", e);
                     this.showButtonFeedback(button, 'Errore!', 2000, true);
@@ -562,11 +572,31 @@
                 }
             },
             
-            deleteRecipe(id, button) {
-                this.recipes = this.recipes.filter(r => r.id !== id);
-                this.saveRecipesToLocal();
-                this.renderRecipeList();
-                this.showNotification('Ricetta eliminata');
+            async deleteRecipe(id, button) {
+                if(!confirm("Sei sicuro di voler eliminare questa ricetta?")) return;
+
+                const originalHtml = button.innerHTML;
+                button.innerHTML = '⏳'; 
+
+                try {
+                    await fetch(this.scriptUrl, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            action: 'delete',
+                            id: id
+                        })
+                    });
+
+                    this.recipes = this.recipes.filter(r => r.id !== id);
+                    this.saveRecipesToLocal();
+                    this.renderRecipeList();
+                    this.showNotification('Ricetta eliminata dal Cloud');
+
+                } catch (error) {
+                    console.error("Errore eliminazione:", error);
+                    button.innerHTML = originalHtml;
+                    this.showNotification('Errore durante l\'eliminazione online', true);
+                }
             },
             
             handleSearch(e) {
@@ -605,9 +635,6 @@
                 };
                 
                 const recipeImageValue = recipe.image || '';
-                
-                // Questa logica ora funziona perché il JSON salvato conterrà
-                // "img/brownie.png" (grazie alla modifica in handleFormSubmit)
                 img.src = recipeImageValue ? recipeImageValue : this.defaultImg;
                 
                 this.renderProcedure(recipe.procedure);
@@ -814,10 +841,9 @@
                     document.getElementById('recipe-name').value = recipe.name;
                     document.getElementById('recipe-servings').value = recipe.servings;
                     
-                    // Mostra il percorso "pulito" nel form (es. "brownie.png")
                     let imageValue = recipe.image || '';
                     if (imageValue.startsWith('img/')) {
-                         imageValue = imageValue.substring(4); // Rimuove "img/"
+                         imageValue = imageValue.substring(4); 
                     }
                     document.getElementById('recipe-image').value = imageValue;
                     
@@ -884,12 +910,10 @@
                 select.dataset.unit = select.value;
             },
 
-            // *** MODIFICA QUI ***
-            // Questa funzione ora aggiunge 'img/' se non è un URL e non c'è già
-            handleFormSubmit(e) {
+            async handleFormSubmit(e) {
                 e.preventDefault();
                 const button = document.getElementById('save-form-btn');
-                this.showButtonFeedback(button, '💾 Salvataggio...');
+                this.showButtonFeedback(button, '☁️ Salvataggio...'); 
                 
                 const id = document.getElementById('recipe-id').value;
                 const ingredients = [];
@@ -909,9 +933,7 @@
 
                 let imagePath = document.getElementById('recipe-image').value.trim();
                 
-                // Se imagePath non è vuoto, non è un URL, e non inizia già con "img/"
                 if (imagePath && !imagePath.startsWith('http') && !imagePath.startsWith('img/')) {
-                    // Aggiungi il prefisso
                     imagePath = 'img/' + imagePath;
                 }
 
@@ -925,17 +947,32 @@
                     ingredients: ingredients
                 };
 
-                if (id) {
-                    const index = this.recipes.findIndex(r => r.id === id);
-                    this.recipes[index] = recipe;
-                } else {
-                    this.recipes.unshift(recipe);
-                }
+                try {
+                    await fetch(this.scriptUrl, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            action: 'save',
+                            recipe: recipe
+                        })
+                    });
 
-                this.saveRecipesToLocal();
-                this.renderRecipeList();
-                this.showView('list');
-                this.showNotification(`Ricetta "${recipe.name}" salvata!`);
+                    if (id) {
+                        const index = this.recipes.findIndex(r => r.id === id);
+                        if (index !== -1) this.recipes[index] = recipe;
+                    } else {
+                        this.recipes.unshift(recipe);
+                    }
+
+                    this.saveRecipesToLocal();
+                    this.renderRecipeList();
+                    this.showView('list');
+                    this.showNotification(`Ricetta "${recipe.name}" salvata sul Cloud!`);
+
+                } catch (error) {
+                    console.error("Errore salvataggio:", error);
+                    this.showButtonFeedback(button, 'Errore!', 2000, true);
+                    this.showNotification('Errore di connessione. Riprova.', true);
+                }
             },
 
             showNotification(message, isError = false) {
