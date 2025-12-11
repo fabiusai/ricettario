@@ -75,7 +75,7 @@
             background: #fffbf5 !important;
         }
         
-        /* 1. Header Export: Rimuoviamo l'immagine di sfondo e creiamo la banda */
+        /* Header Export */
         .export-container #recipe-header-image-container {
             height: auto !important;
             min-height: 0 !important;
@@ -83,17 +83,17 @@
             padding: 0 !important;
             margin-bottom: 20px !important;
             position: relative !important;
-            border-bottom: 4px double #d97706 !important; /* Riga decorativa */
+            border-bottom: 4px double #d97706 !important; 
         }
 
-        /* 2. Nascondi elementi grafici web */
+        /* Nascondi elementi grafici web */
         .export-container img#detail-image,
         .export-container .bg-gradient-to-t,
         .export-container #detail-tags {
             display: none !important;
         }
 
-        /* 3. Stile del Titolo per l'Export */
+        /* Stile Titolo Export */
         .export-container #title-container {
             position: static !important;
             width: 100% !important;
@@ -103,9 +103,9 @@
         }
 
         .export-container #detail-title {
-            font-family: 'Inter', sans-serif !important; /* Sans Serif */
-            color: #78350f !important; /* Marrone scuro */
-            font-size: 3.5rem !important; /* Molto grande */
+            font-family: 'Inter', sans-serif !important; 
+            color: #78350f !important; 
+            font-size: 3.5rem !important; 
             font-weight: 800 !important;
             text-transform: uppercase !important;
             text-shadow: none !important;
@@ -114,7 +114,6 @@
             margin-bottom: 10px !important;
         }
         
-        /* Decorazione sotto il titolo */
         .export-container #title-container::after {
             content: '✻';
             display: block;
@@ -130,7 +129,7 @@
 
     <header class="fixed top-0 left-0 w-full z-40 bg-white/90 backdrop-blur-md shadow-sm border-b border-amber-100 transition-all duration-300" id="main-header">
         <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-            <h1 class="text-2xl font-bold text-amber-800 tracking-tight cursor-pointer whitespace-nowrap" onclick="app.goHome()">Il Ricettario</h1>
+            <h1 class="text-2xl font-bold text-amber-800 tracking-tight cursor-pointer whitespace-nowrap" onclick="app.resetAndGoHome()">Il Ricettario</h1>
             
             <div class="flex-grow max-w-md relative">
                 <input type="search" id="global-search" placeholder="Cerca..." 
@@ -584,6 +583,15 @@
                 window.scrollTo(0,0);
             },
 
+            // 3) NUOVA FUNZIONE RESET
+            resetAndGoHome() {
+                this.dom.searchInput.value = '';
+                this.handleSearch('');
+                this.goHome();
+                // Chiudi eventuali accordion aperti
+                document.querySelectorAll('.accordion-item').forEach(el => el.classList.remove('active'));
+            },
+
             openScaleModal() {
                 const recipe = this.state.filteredRecipes[this.state.currentRecipeIndex];
                 const modalList = document.getElementById('modal-ingredients-list');
@@ -594,7 +602,8 @@
                     if(ing.unit === 'qb') return;
                     const div = document.createElement('div');
                     div.className = 'flex items-center gap-3 py-2 border-b border-gray-50 last:border-0';
-                    div.innerHTML = `<span class="text-sm text-gray-700 flex-1 truncate font-medium">${ing.name}</span><div class="flex items-center gap-1 bg-gray-50 rounded p-1"><input type="number" step="any" class="mod-ing-input w-20 bg-transparent text-right text-base font-bold text-amber-900 focus:outline-none" data-idx="${idx}" data-orig="${ing.amount}" value="${ing.amount}"><span class="text-xs text-gray-500 w-6">${ing.unit}</span></div>`;
+                    // 2) CAMBIO TYPE IN TEXT PER SUPPORTARE FRAZIONI (es 0,5)
+                    div.innerHTML = `<span class="text-sm text-gray-700 flex-1 truncate font-medium">${ing.name}</span><div class="flex items-center gap-1 bg-gray-50 rounded p-1"><input type="text" class="mod-ing-input w-20 bg-transparent text-right text-base font-bold text-amber-900 focus:outline-none" data-idx="${idx}" data-orig="${ing.amount}" value="${ing.amount}"><span class="text-xs text-gray-500 w-6">${ing.unit}</span></div>`;
                     modalList.appendChild(div);
                 });
                 this.dom.scaleModal.classList.add('open');
@@ -613,8 +622,17 @@
                 if(orig.type === 'porzioni') factor = target.val / orig.val;
                 if(orig.type === 'teglia') factor = (target.val * target.val) / (orig.val * orig.val);
                 document.querySelectorAll('.mod-ing-input').forEach(input => {
-                    const originalAmount = parseFloat(input.dataset.orig);
-                    if(!isNaN(originalAmount)) { const newVal = originalAmount * factor; input.value = (newVal < 10) ? newVal.toFixed(1) : Math.round(newVal); }
+                    const originalAmount = parseFloat(input.dataset.orig.replace(',', '.'));
+                    // 2) LOGICA RICALCOLO: Arrotonda solo se NON è "pz"
+                    if(!isNaN(originalAmount)) { 
+                        const newVal = originalAmount * factor; 
+                        const unitSpan = input.nextElementSibling;
+                        if(unitSpan && unitSpan.textContent === 'pz') {
+                             input.value = parseFloat(newVal.toFixed(2)); // Mostra decimali per i pezzi
+                        } else {
+                             input.value = (newVal < 10) ? newVal.toFixed(1) : Math.round(newVal); 
+                        }
+                    }
                 });
             },
 
@@ -672,9 +690,22 @@
             addFormIngredientRow(container, data = {name:'', amount:'', unit:'g'}) {
                 const div = document.createElement('div');
                 div.className = 'flex gap-2 items-center';
-                div.innerHTML = `<input type="text" class="form-ing-name flex-grow border border-amber-200 rounded px-2 py-2 text-sm focus:outline-none focus:border-amber-400" placeholder="Ingrediente" value="${data.name}" required><input type="text" class="form-ing-amount w-16 border border-amber-200 rounded px-2 py-2 text-sm text-right focus:outline-none focus:border-amber-400" placeholder="Qtà" value="${data.amount}"><select class="form-ing-unit w-16 border border-amber-200 rounded px-1 py-2 text-sm bg-white focus:outline-none focus:border-amber-400"><option value="g" ${data.unit==='g'?'selected':''}>g</option><option value="pz" ${data.unit==='pz'?'selected':''}>pz</option><option value="ml" ${data.unit==='ml'?'selected':''}>ml</option><option value="qb" ${data.unit==='qb'?'selected':''}>qb</option></select><button type="button" class="text-rose-400 hover:text-rose-600 font-bold px-2">×</button>`;
-                div.querySelector('button').onclick = () => div.remove();
+                // 1) AGGIUNTO BOTTONI SU/GIU
+                div.innerHTML = `<input type="text" class="form-ing-name flex-grow border border-amber-200 rounded px-2 py-2 text-sm focus:outline-none focus:border-amber-400" placeholder="Ingrediente" value="${data.name}" required><input type="text" class="form-ing-amount w-16 border border-amber-200 rounded px-2 py-2 text-sm text-right focus:outline-none focus:border-amber-400" placeholder="Qtà" value="${data.amount}"><select class="form-ing-unit w-16 border border-amber-200 rounded px-1 py-2 text-sm bg-white focus:outline-none focus:border-amber-400"><option value="g" ${data.unit==='g'?'selected':''}>g</option><option value="pz" ${data.unit==='pz'?'selected':''}>pz</option><option value="ml" ${data.unit==='ml'?'selected':''}>ml</option><option value="qb" ${data.unit==='qb'?'selected':''}>qb</option></select>
+                <div class="flex flex-col gap-0.5"><button type="button" class="text-amber-400 hover:text-amber-600 px-1 text-[10px]" onclick="app.moveIngRow(this, -1)">▲</button><button type="button" class="text-amber-400 hover:text-amber-600 px-1 text-[10px]" onclick="app.moveIngRow(this, 1)">▼</button></div>
+                <button type="button" class="text-rose-400 hover:text-rose-600 font-bold px-2">×</button>`;
+                div.querySelector('button.text-rose-400').onclick = () => div.remove();
                 container.appendChild(div);
+            },
+
+            // 1) NUOVA FUNZIONE SPOSTA RIGA
+            moveIngRow(btn, direction) {
+                const row = btn.closest('.flex'); // Il div riga
+                if (direction === -1 && row.previousElementSibling) {
+                    row.parentNode.insertBefore(row, row.previousElementSibling);
+                } else if (direction === 1 && row.nextElementSibling) {
+                    row.parentNode.insertBefore(row.nextElementSibling, row);
+                }
             },
 
             async saveRecipe(e) {
@@ -693,7 +724,7 @@
                     servings: form.querySelector('#form-servings').value,
                     image: form.querySelector('#form-image').value,
                     tags: form.querySelector('#form-tags').value,
-                    notes: form.querySelector('#form-notes').value, // Save Notes
+                    notes: form.querySelector('#form-notes').value, 
                     procedure: form.querySelector('#form-procedure').value,
                     ingredients: ingredients
                 };
@@ -730,7 +761,6 @@
                         onclone: (clonedDoc) => {
                             const el = clonedDoc.querySelector('.paper-texture');
                             if(el) { el.style.margin = '0'; el.style.boxShadow = 'none'; }
-                            // Le immagini sono nascoste via CSS, non serve JS
                         }
                     });
 
