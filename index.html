@@ -58,7 +58,7 @@
         }
         .animate-pulse-amber { animation: pulse-amber 2s infinite; }
 
-        /* --- STILI PER EXPORT IMMAGINE (FIX DEFINITIVO) --- */
+        /* --- STILI PER EXPORT (NO IMMAGINE) --- */
         .export-container {
             position: fixed;
             top: -9999px;
@@ -72,59 +72,43 @@
             border: none !important;
             margin: 0 !important;
             border-radius: 0 !important;
+            background: #fffbf5 !important;
         }
         
-        /* 1. Contenitore Immagine */
+        /* 1. Reset completo Header per rimuovere immagine */
         .export-container #recipe-header-image-container {
-            height: 350px !important; /* Altezza fissa per l'export */
-            position: relative !important;
-            overflow: hidden !important;
+            height: auto !important;
+            min-height: 0 !important;
+            background: transparent !important;
+            padding: 0 !important;
+            margin-bottom: 20px !important;
+            border-bottom: 3px double #fcd34d !important; /* Decorazione separatore */
         }
 
-        /* 2. Immagine: FORZIAMO IL CROP (Taglio) invece dello stretch */
-        .export-container img {
-            width: 100% !important;
-            height: 100% !important;
-            object-fit: cover !important; /* Questo taglia l'immagine mantenendo le proporzioni */
-            object-position: center !important;
-            background-color: #fcd34d;
-            display: block !important;
-        }
-
-        /* 3. Nascondi elementi indesiderati nell'export */
-        .export-container #detail-tags, 
-        .export-container .bg-gradient-to-t {
+        /* 2. Nascondi totalmente il tag IMG e i gradienti */
+        .export-container img#detail-image,
+        .export-container .bg-gradient-to-t,
+        .export-container #detail-tags {
             display: none !important;
         }
 
-        /* 4. Banda in basso (Sostituisce il biscotto) */
+        /* 3. Stile del Titolo (Pulito su sfondo bianco) */
         .export-container #title-container {
-            position: absolute !important;
-            top: auto !important;
-            bottom: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            transform: none !important;
+            position: static !important; /* Non più absolute */
             width: 100% !important;
-            text-align: left !important;
-            padding: 20px 30px !important;
-            
-            /* Stile della banda */
-            background: rgba(255, 251, 245, 0.95) !important; /* Colore crema quasi opaco */
-            border-top: 2px solid #fcd34d;
+            padding: 40px 40px 20px 40px !important;
+            text-align: center !important;
+            background: transparent !important;
+            border: none !important;
         }
 
         .export-container #detail-title {
-            font-family: 'Playfair Display', serif !important; /* Torno al Serif per eleganza nella banda */
-            background-color: transparent !important;
+            font-family: 'Playfair Display', serif !important; /* Torno al Serif elegante per la carta */
             color: #78350f !important; /* Amber 900 */
-            padding: 0 !important;
-            border-radius: 0 !important;
-            box-shadow: none !important;
-            display: block !important;
-            font-size: 2.8rem !important; /* Titolo grande */
-            border: none !important;
+            font-size: 3.5rem !important; /* Molto grande */
+            font-weight: 700 !important;
             text-shadow: none !important;
+            display: block !important;
             line-height: 1.1 !important;
         }
     </style>
@@ -169,13 +153,14 @@
             
             <div id="recipe-card-content" class="paper-texture rounded-xl overflow-hidden relative border border-amber-100/50 shadow-lg bg-[#fffbf5]">
                 
-                <div id="recipe-header-image-container" class="relative h-64 sm:h-80">
-                    <img id="detail-image" src="" class="w-full h-full object-cover bg-amber-100" crossorigin="anonymous">
+                <div id="recipe-header-image-container" class="relative h-64 sm:h-80 bg-amber-100">
+                    <img id="detail-image" src="" class="w-full h-full object-cover" crossorigin="anonymous">
+                    
                     <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none transition-opacity"></div>
                     
-                    <div id="title-container" class="absolute bottom-0 left-0 p-6 text-white w-full pointer-events-none">
-                        <div class="flex gap-2 mb-2 flex-wrap" id="detail-tags"></div>
-                        <h2 id="detail-title" class="text-3xl sm:text-4xl font-bold serif-font leading-tight shadow-black drop-shadow-md"></h2>
+                    <div id="title-container" class="absolute bottom-0 left-0 p-6 text-white w-full">
+                        <div class="flex gap-2 mb-2 flex-wrap relative z-10" id="detail-tags"></div>
+                        <h2 id="detail-title" class="text-3xl sm:text-4xl font-bold serif-font leading-tight shadow-black drop-shadow-md relative z-10"></h2>
                     </div>
                 </div>
 
@@ -194,7 +179,6 @@
                                 <h3 class="font-bold text-amber-900 text-xl mb-4 serif-font border-l-4 border-amber-400 pl-3">Ingredienti</h3>
                                 <ul id="detail-ingredients" class="space-y-3 text-amber-900/90 text-lg list-none pl-0"></ul>
                             </div>
-
                             <div id="detail-notes-container" class="hidden bg-amber-50 rounded-lg p-4 border border-amber-100">
                                 <h4 class="font-bold text-amber-800 text-sm mb-2 uppercase tracking-wide">Note</h4>
                                 <p id="detail-notes" class="text-amber-900/80 text-sm italic leading-relaxed"></p>
@@ -517,6 +501,12 @@
                 });
             },
 
+            searchByTag(tag) {
+                this.dom.searchInput.value = tag;
+                this.handleSearch(tag);
+                this.goHome();
+            },
+
             openRecipe(id, contextType, contextList) {
                 const recipe = this.state.allRecipes.find(r => r.id === id);
                 if(!recipe) return;
@@ -537,8 +527,13 @@
                 this.dom.detailServings.textContent = recipe.servings || 'Standard';
                 this.dom.detailServings.dataset.original = recipe.servings;
 
-                this.dom.detailTags.innerHTML = (recipe.tags || '').split(',').filter(t => t.trim())
-                    .map(t => `<span class="bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wider">${t.trim()}</span>`).join('');
+                this.dom.detailTags.innerHTML = (recipe.tags || '').split(',')
+                    .filter(t => t.trim())
+                    .map(t => {
+                        const tag = t.trim();
+                        const safeTag = tag.replace(/'/g, "\\'");
+                        return `<span onclick="app.searchByTag('${safeTag}')" class="cursor-pointer hover:bg-white/40 bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wider transition-colors">${tag}</span>`;
+                    }).join('');
 
                 this.dom.detailIng.innerHTML = '';
                 if(recipe.ingredients) {
@@ -550,7 +545,6 @@
                     });
                 }
 
-                // Render Note
                 if(recipe.notes && recipe.notes.trim()) {
                     this.dom.detailNotes.textContent = recipe.notes;
                     this.dom.detailNotesContainer.classList.remove('hidden');
@@ -724,7 +718,7 @@
                         onclone: (clonedDoc) => {
                             const el = clonedDoc.querySelector('.paper-texture');
                             if(el) { el.style.margin = '0'; el.style.boxShadow = 'none'; }
-                            const imgs = clonedDoc.querySelectorAll('img'); imgs.forEach(img => img.style.display = 'block');
+                            // Non facciamo nulla con le immagini qui perché sono nascoste via CSS
                         }
                     });
 
