@@ -58,7 +58,7 @@
         }
         .animate-pulse-amber { animation: pulse-amber 2s infinite; }
 
-        /* --- STILI PER EXPORT (NO IMMAGINE) --- */
+        /* --- STILI PER EXPORT (SOLO TESTO ELEGANTE) --- */
         .export-container {
             position: fixed;
             top: -9999px;
@@ -75,41 +75,53 @@
             background: #fffbf5 !important;
         }
         
-        /* 1. Reset completo Header per rimuovere immagine */
+        /* 1. Header Export: Rimuoviamo l'immagine di sfondo e creiamo la banda */
         .export-container #recipe-header-image-container {
             height: auto !important;
             min-height: 0 !important;
             background: transparent !important;
             padding: 0 !important;
             margin-bottom: 20px !important;
-            border-bottom: 3px double #fcd34d !important; /* Decorazione separatore */
+            position: relative !important;
+            border-bottom: 4px double #d97706 !important; /* Riga decorativa */
         }
 
-        /* 2. Nascondi totalmente il tag IMG e i gradienti */
+        /* 2. Nascondi elementi grafici web */
         .export-container img#detail-image,
         .export-container .bg-gradient-to-t,
         .export-container #detail-tags {
             display: none !important;
         }
 
-        /* 3. Stile del Titolo (Pulito su sfondo bianco) */
+        /* 3. Stile del Titolo per l'Export */
         .export-container #title-container {
-            position: static !important; /* Non più absolute */
+            position: static !important;
             width: 100% !important;
             padding: 40px 40px 20px 40px !important;
             text-align: center !important;
             background: transparent !important;
-            border: none !important;
         }
 
         .export-container #detail-title {
-            font-family: 'Playfair Display', serif !important; /* Torno al Serif elegante per la carta */
-            color: #78350f !important; /* Amber 900 */
+            font-family: 'Inter', sans-serif !important; /* Sans Serif */
+            color: #78350f !important; /* Marrone scuro */
             font-size: 3.5rem !important; /* Molto grande */
-            font-weight: 700 !important;
+            font-weight: 800 !important;
+            text-transform: uppercase !important;
             text-shadow: none !important;
             display: block !important;
             line-height: 1.1 !important;
+            margin-bottom: 10px !important;
+        }
+        
+        /* Decorazione sotto il titolo */
+        .export-container #title-container::after {
+            content: '✻';
+            display: block;
+            color: #d97706;
+            font-size: 2rem;
+            margin-top: 10px;
+            opacity: 0.6;
         }
     </style>
 </head>
@@ -154,7 +166,7 @@
             <div id="recipe-card-content" class="paper-texture rounded-xl overflow-hidden relative border border-amber-100/50 shadow-lg bg-[#fffbf5]">
                 
                 <div id="recipe-header-image-container" class="relative h-64 sm:h-80 bg-amber-100">
-                    <img id="detail-image" src="" class="w-full h-full object-cover" crossorigin="anonymous">
+                    <img id="detail-image" src="" class="w-full h-full object-cover">
                     
                     <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none transition-opacity"></div>
                     
@@ -718,7 +730,7 @@
                         onclone: (clonedDoc) => {
                             const el = clonedDoc.querySelector('.paper-texture');
                             if(el) { el.style.margin = '0'; el.style.boxShadow = 'none'; }
-                            // Non facciamo nulla con le immagini qui perché sono nascoste via CSS
+                            // Le immagini sono nascoste via CSS, non serve JS
                         }
                     });
 
