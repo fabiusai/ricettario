@@ -75,7 +75,7 @@
             background: #fffbf5 !important;
         }
         
-        /* Header Export */
+        /* 1. Header Export: Rimuoviamo l'immagine di sfondo e creiamo la banda */
         .export-container #recipe-header-image-container {
             height: auto !important;
             min-height: 0 !important;
@@ -83,17 +83,17 @@
             padding: 0 !important;
             margin-bottom: 20px !important;
             position: relative !important;
-            border-bottom: 4px double #d97706 !important; 
+            border-bottom: 4px double #d97706 !important; /* Riga decorativa */
         }
 
-        /* Nascondi elementi grafici web */
+        /* 2. Nascondi elementi grafici web */
         .export-container img#detail-image,
         .export-container .bg-gradient-to-t,
         .export-container #detail-tags {
             display: none !important;
         }
 
-        /* Stile Titolo Export */
+        /* 3. Stile del Titolo per l'Export */
         .export-container #title-container {
             position: static !important;
             width: 100% !important;
@@ -103,9 +103,9 @@
         }
 
         .export-container #detail-title {
-            font-family: 'Inter', sans-serif !important; 
-            color: #78350f !important; 
-            font-size: 3.5rem !important; 
+            font-family: 'Inter', sans-serif !important; /* Sans Serif */
+            color: #78350f !important; /* Marrone scuro */
+            font-size: 3.5rem !important; /* Molto grande */
             font-weight: 800 !important;
             text-transform: uppercase !important;
             text-shadow: none !important;
@@ -114,6 +114,7 @@
             margin-bottom: 10px !important;
         }
         
+        /* Decorazione sotto il titolo */
         .export-container #title-container::after {
             content: '✻';
             display: block;
@@ -219,6 +220,12 @@
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
                             <span>Home</span>
                         </button>
+                        
+                        <button id="btn-link" class="flex flex-col items-center justify-center w-12 h-12 rounded-xl text-amber-700 hover:bg-amber-50 text-[10px] font-medium gap-1">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                            <span>Link</span>
+                        </button>
+
                         <button id="btn-recalc" class="flex flex-col items-center justify-center w-12 h-12 rounded-xl text-amber-700 hover:bg-amber-50 text-[10px] font-medium gap-1">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
                             <span>Dosi</span>
@@ -378,7 +385,8 @@
                     navNext: document.getElementById('nav-next'),
                     scaleModal: document.getElementById('scale-modal'),
                     scaleOverlay: document.getElementById('scale-overlay'),
-                    btnOpenAdmin: document.getElementById('btn-open-admin')
+                    btnOpenAdmin: document.getElementById('btn-open-admin'),
+                    btnLink: document.getElementById('btn-link')
                 };
 
                 this.getRecipesFromLocal();
@@ -397,6 +405,12 @@
                 document.getElementById('scale-overlay').addEventListener('click', () => this.closeScaleModal());
                 document.getElementById('modal-btn-calc').addEventListener('click', () => this.calcModalDoses());
                 document.getElementById('modal-apply-btn').addEventListener('click', () => this.applyModalDoses());
+                
+                // Route Listener
+                window.addEventListener('popstate', () => this.handleRouting());
+                if(this.dom.btnLink) {
+                    this.dom.btnLink.addEventListener('click', () => this.copyRecipeLink());
+                }
             },
 
             getRecipesFromLocal() {
@@ -415,8 +429,22 @@
                         this.state.allRecipes = data;
                         localStorage.setItem('ricettarioDB', JSON.stringify(data));
                         this.renderHome();
+                        this.handleRouting(); // Check route after load
                     }
-                } catch(e) { console.error(e); this.showNotification("Modalità Offline", true); }
+                } catch(e) { 
+                    console.error(e); 
+                    this.showNotification("Modalità Offline", true); 
+                    this.handleRouting();
+                }
+            },
+
+            handleRouting() {
+                const hash = window.location.hash.substring(1);
+                if (hash) {
+                    this.openRecipe(hash, 'link', this.state.allRecipes);
+                } else {
+                    this.goHome(false);
+                }
             },
 
             renderHome() {
@@ -520,7 +548,16 @@
 
             openRecipe(id, contextType, contextList) {
                 const recipe = this.state.allRecipes.find(r => r.id === id);
-                if(!recipe) return;
+                if(!recipe) {
+                    history.replaceState(null, null, ' ');
+                    this.goHome();
+                    return;
+                }
+
+                if(window.location.hash !== '#' + id) {
+                    history.pushState({id: id}, null, '#' + id);
+                }
+
                 this.state.currentContext = contextType;
                 this.state.filteredRecipes = contextList || this.state.allRecipes;
                 this.state.currentRecipeIndex = this.state.filteredRecipes.findIndex(r => r.id === id);
@@ -551,7 +588,6 @@
                     recipe.ingredients.forEach(ing => {
                         const li = document.createElement('li');
                         li.className = 'flex justify-between items-baseline border-b border-amber-100/50 pb-2 pt-1 last:border-0';
-                        // MODIFICA: visualizzazione "q.b." se unità è qb
                         li.innerHTML = `<span class="font-medium flex-1 text-amber-900">${ing.name}</span><span class="text-amber-800 whitespace-nowrap ml-4 font-mono text-base"><span class="ing-amount font-bold" data-orig="${ing.amount}">${ing.amount}</span><span class="text-xs ml-0.5">${ing.unit === 'qb' ? 'q.b.' : ing.unit}</span></span>`;
                         this.dom.detailIng.appendChild(li);
                     });
@@ -565,7 +601,6 @@
                 }
 
                 const steps = (recipe.procedure || '').split('\n').filter(s => s.trim());
-                // MODIFICA: text-left
                 this.dom.detailProc.innerHTML = steps.map(s => `<p class="mb-4 relative pl-5"><span class="absolute left-0 top-0 text-amber-400 font-bold">›</span>${s}</p>`).join('');
                 this.dom.navPrev.disabled = this.state.filteredRecipes.length <= 1;
                 this.dom.navNext.disabled = this.state.filteredRecipes.length <= 1;
@@ -580,7 +615,10 @@
                 this.openRecipe(list[newIndex].id, this.state.currentContext, list);
             },
 
-            goHome() {
+            goHome(updateHistory = true) {
+                if(updateHistory) {
+                    history.pushState(null, null, window.location.pathname + window.location.search);
+                }
                 this.dom.recipeDetailView.classList.add('hidden'); this.dom.adminView.classList.add('hidden'); this.dom.homeView.classList.remove('hidden'); this.dom.btnOpenAdmin.classList.remove('hidden');
                 window.scrollTo(0,0);
             },
@@ -590,6 +628,15 @@
                 this.handleSearch('');
                 this.goHome();
                 document.querySelectorAll('.accordion-item').forEach(el => el.classList.remove('active'));
+            },
+
+            copyRecipeLink() {
+                const url = window.location.href;
+                navigator.clipboard.writeText(url).then(() => {
+                    this.showNotification("Link copiato negli appunti!");
+                }).catch(err => {
+                    this.showNotification("Impossibile copiare il link", true);
+                });
             },
 
             openScaleModal() {
@@ -673,7 +720,7 @@
                     form.querySelector('#form-servings').value = recipeData.servings;
                     form.querySelector('#form-tags').value = recipeData.tags || '';
                     form.querySelector('#form-image').value = recipeData.image || '';
-                    form.querySelector('#form-notes').value = recipeData.notes || ''; 
+                    form.querySelector('#form-notes').value = recipeData.notes || ''; // Load Notes
                     form.querySelector('#form-procedure').value = recipeData.procedure;
                     form.querySelector('#form-delete').classList.remove('hidden');
                     if(recipeData.ingredients) recipeData.ingredients.forEach(ing => this.addFormIngredientRow(ingList, ing));
