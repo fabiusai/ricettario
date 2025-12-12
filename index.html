@@ -10,11 +10,15 @@
     <link rel="icon" href="favicon.ico">
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
         
+        /* --- STILI GENERALI --- */
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #fef3e2 0%, #fae8d0 100%);
+            background-color: #fffbf5;
+            background-image: radial-gradient(#fcd34d 1px, transparent 1px);
+            background-size: 24px 24px;
+            color: #451a03; 
             padding-bottom: 100px;
         }
         
@@ -22,28 +26,79 @@
             font-family: 'Playfair Display', serif;
         }
 
-        /* Texture Carta */
-        .paper-texture {
-            background: linear-gradient(180deg, #fffbf5 0%, #fff9f0 100%);
-            box-shadow: 0 4px 6px rgba(120, 53, 15, 0.05), 0 1px 3px rgba(120, 53, 15, 0.1);
-        }
-
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Accordion */
+        /* --- UI COMPONENTS --- */
+        
+        .paper-texture {
+            background: linear-gradient(180deg, #ffffff 0%, #fffbf2 100%);
+            box-shadow: 0 4px 20px -2px rgba(180, 83, 9, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        /* Accordion / Card Categoria */
+        .accordion-item {
+            border: 1px solid rgba(252, 211, 77, 0.5);
+            border-radius: 16px;
+            background: white;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            height: fit-content; /* Importante per la griglia */
+        }
+        
+        .accordion-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(217, 119, 6, 0.1);
+            border-color: #f59e0b;
+        }
+
         .accordion-content {
-            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            transition: max-height 0.5s ease-in-out, opacity 0.4s ease-in-out;
             max-height: 0;
             opacity: 0;
             overflow: hidden;
         }
-        .accordion-item.active .accordion-content {
-            max-height: 2000px;
-            opacity: 1;
+        
+        .accordion-item.active {
+            border-color: #d97706;
+            background: #fffbeb; /* Un leggero giallino quando attivo */
+            box-shadow: 0 10px 25px -5px rgba(217, 119, 6, 0.15);
+            grid-row: span 2; /* Se supportato, aiuta nel layout masonry */
         }
+        
+        .accordion-item.active .accordion-content {
+            max-height: 2000px; 
+            opacity: 1;
+            padding-bottom: 1rem;
+        }
+        
         .accordion-icon { transition: transform 0.3s ease; }
         .accordion-item.active .accordion-icon { transform: rotate(180deg); }
+
+        /* Search Bar Hero */
+        .hero-search {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px -10px rgba(180, 83, 9, 0.15);
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+        .hero-search:focus-within {
+            transform: scale(1.01);
+            border-color: #fcd34d;
+            box-shadow: 0 15px 40px -10px rgba(180, 83, 9, 0.25);
+        }
+
+        /* Animazioni */
+        @keyframes fade-in-up {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-enter { animation: fade-in-up 0.6s ease-out forwards; }
+        
+        @keyframes pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+        .animate-pulse-amber { animation: pulse-soft 2s infinite; }
 
         /* Modale */
         #scale-modal {
@@ -52,195 +107,157 @@
         }
         #scale-modal.open { transform: translateY(0); }
 
-        @keyframes pulse-amber {
-            0%, 100% { opacity: 1; }
-            50% { opacity: .5; }
-        }
-        .animate-pulse-amber { animation: pulse-amber 2s infinite; }
-
-        /* --- STILI PER EXPORT (SOLO TESTO ELEGANTE) --- */
-        .export-container {
-            position: fixed;
-            top: -9999px;
-            left: -9999px;
-            width: 800px !important;
-            z-index: -100;
-        }
-        
-        .export-container .paper-texture {
-            box-shadow: none !important;
-            border: none !important;
-            margin: 0 !important;
-            border-radius: 0 !important;
-            background: #fffbf5 !important;
-        }
-        
-        /* 1. Header Export: Rimuoviamo l'immagine di sfondo e creiamo la banda */
-        .export-container #recipe-header-image-container {
-            height: auto !important;
-            min-height: 0 !important;
-            background: transparent !important;
-            padding: 0 !important;
-            margin-bottom: 20px !important;
-            position: relative !important;
-            border-bottom: 4px double #d97706 !important; /* Riga decorativa */
-        }
-
-        /* 2. Nascondi elementi grafici web */
-        .export-container img#detail-image,
-        .export-container .bg-gradient-to-t,
-        .export-container #detail-tags {
-            display: none !important;
-        }
-
-        /* 3. Stile del Titolo per l'Export */
-        .export-container #title-container {
-            position: static !important;
-            width: 100% !important;
-            padding: 40px 40px 20px 40px !important;
-            text-align: center !important;
-            background: transparent !important;
-        }
-
-        .export-container #detail-title {
-            font-family: 'Inter', sans-serif !important; /* Sans Serif */
-            color: #78350f !important; /* Marrone scuro */
-            font-size: 3.5rem !important; /* Molto grande */
-            font-weight: 800 !important;
-            text-transform: uppercase !important;
-            text-shadow: none !important;
-            display: block !important;
-            line-height: 1.1 !important;
-            margin-bottom: 10px !important;
-        }
-        
-        /* Decorazione sotto il titolo */
-        .export-container #title-container::after {
-            content: '✻';
-            display: block;
-            color: #d97706;
-            font-size: 2rem;
-            margin-top: 10px;
-            opacity: 0.6;
-        }
+        /* --- STILI EXPORT --- */
+        .export-container { position: fixed; top: -9999px; left: -9999px; width: 800px !important; z-index: -100; }
+        .export-container .paper-texture { margin: 0 !important; border-radius: 0 !important; background: #fffbf5 !important; box-shadow: none !important; border: none !important; }
+        .export-container #recipe-header-image-container { height: auto !important; background: transparent !important; padding: 0 !important; margin-bottom: 20px !important; border-bottom: 4px double #d97706 !important; }
+        .export-container img#detail-image, .export-container .bg-gradient-to-t, .export-container #detail-tags { display: none !important; }
+        .export-container #title-container { position: static !important; width: 100% !important; padding: 40px 40px 20px 40px !important; text-align: center !important; background: transparent !important; }
+        .export-container #detail-title { font-family: 'Inter', sans-serif !important; color: #78350f !important; font-size: 3.5rem !important; font-weight: 800 !important; text-transform: uppercase !important; display: block !important; line-height: 1.1 !important; margin-bottom: 10px !important; }
+        .export-container #title-container::after { content: '✻'; display: block; color: #d97706; font-size: 2rem; margin-top: 10px; opacity: 0.6; }
     </style>
 </head>
 
-<body class="min-h-screen text-amber-900">
+<body class="min-h-screen text-amber-950">
 
     <header class="fixed top-0 left-0 w-full z-40 bg-white/90 backdrop-blur-md shadow-sm border-b border-amber-100 transition-all duration-300" id="main-header">
-        <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-            <h1 class="text-2xl font-bold text-amber-800 tracking-tight cursor-pointer whitespace-nowrap" onclick="app.resetAndGoHome()">Il Ricettario</h1>
-            
-            <div class="flex-grow max-w-md relative">
-                <input type="search" id="global-search" placeholder="Cerca..." 
-                       class="w-full bg-amber-50/50 border border-amber-200 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white transition-all">
-                <svg class="w-4 h-4 text-amber-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+            <h1 class="text-xl md:text-2xl font-bold text-amber-800 tracking-tight cursor-pointer hover:text-amber-600 transition-colors" onclick="app.resetAndGoHome()">
+                📔 Il Ricettario
+            </h1>
+            <div class="text-xs font-medium text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-100 cursor-pointer hover:bg-amber-100 transition-colors" onclick="app.copyRecipeLink()">
+                Condividi App
             </div>
         </div>
     </header>
 
-    <div id="app-container" class="container max-w-3xl mx-auto p-4 pt-20">
+    <div id="app-container" class="container max-w-4xl mx-auto px-4 pb-24 pt-20">
 
-        <main id="home-view" class="fade-in">
-            <div id="welcome-msg" class="text-center mb-6 mt-2">
-                <p class="text-amber-800/60 italic serif-font text-lg">Le tue ricette, sempre con te</p>
+        <main id="home-view" class="animate-enter">
+            
+            <div id="hero-section" class="mb-10 mt-6 text-center">
+                <h2 class="text-3xl md:text-4xl font-bold text-amber-900 mb-2 serif-font tracking-tight">Cosa cuciniamo oggi?</h2>
+                
+                <div class="mt-6 relative max-w-lg mx-auto hero-search flex items-center p-2">
+                    <svg class="w-6 h-6 text-amber-400 ml-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <input type="search" id="global-search" placeholder="Cerca ricetta o ingrediente..." 
+                           class="w-full bg-transparent border-none text-lg px-3 py-2 text-amber-900 placeholder-amber-900/30 focus:ring-0 focus:outline-none">
+                    <button id="clear-search" class="hidden text-amber-400 hover:text-amber-600 p-2 flex-shrink-0">✕</button>
+                </div>
             </div>
 
-            <div id="categories-container" class="space-y-3">
-                <div class="text-center py-10 animate-pulse-amber">Sincronizzazione Cloud...</div>
+            <div id="loading-state" class="text-center py-12 animate-pulse-amber">
+                <div class="text-4xl mb-2">🥘</div>
+                <p class="text-amber-800 font-medium">Sto apparecchiando la tavola...</p>
             </div>
+
+            <div id="categories-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start hidden">
+                </div>
 
             <div id="search-results-container" class="hidden space-y-4">
-                <h3 class="font-bold text-amber-900 text-lg mb-2 flex items-center gap-2">
-                    <span id="search-count">0</span> Risultati
-                    <button id="clear-search" class="text-xs bg-amber-200 hover:bg-amber-300 px-2 py-1 rounded text-amber-800 ml-auto">Cancella Filtri</button>
-                </h3>
-                <div id="search-list" class="space-y-3"></div>
+                <div class="flex justify-between items-end mb-4 border-b border-amber-200 pb-2">
+                    <h3 class="font-bold text-amber-900 text-xl serif-font">Risultati della ricerca</h3>
+                    <span class="text-sm text-amber-600"><span id="search-count">0</span> ricette</span>
+                </div>
+                <div id="search-list" class="grid gap-3"></div>
             </div>
         </main>
 
 
-        <section id="recipe-detail-view" class="hidden pb-10">
+        <section id="recipe-detail-view" class="hidden">
             
-            <div id="recipe-card-content" class="paper-texture rounded-xl overflow-hidden relative border border-amber-100/50 shadow-lg bg-[#fffbf5]">
+            <div class="flex justify-between items-center mb-4 md:hidden">
+                <button onclick="app.goHome()" class="flex items-center gap-1 text-amber-800 font-medium bg-white/50 px-3 py-1.5 rounded-lg backdrop-blur border border-amber-100">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Indietro
+                </button>
+            </div>
+
+            <div id="recipe-card-content" class="paper-texture rounded-2xl overflow-hidden relative bg-white animate-enter">
                 
-                <div id="recipe-header-image-container" class="relative h-64 sm:h-80 bg-amber-100">
-                    <img id="detail-image" src="" class="w-full h-full object-cover">
+                <div id="recipe-header-image-container" class="relative h-72 md:h-96 bg-amber-100 group">
+                    <img id="detail-image" src="" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none"></div>
                     
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none transition-opacity"></div>
-                    
-                    <div id="title-container" class="absolute bottom-0 left-0 p-6 text-white w-full">
-                        <div class="flex gap-2 mb-2 flex-wrap relative z-10" id="detail-tags"></div>
-                        <h2 id="detail-title" class="text-3xl sm:text-4xl font-bold serif-font leading-tight shadow-black drop-shadow-md relative z-10"></h2>
+                    <div id="title-container" class="absolute bottom-0 left-0 p-6 md:p-8 text-white w-full">
+                        <div class="flex gap-2 mb-3 flex-wrap relative z-10" id="detail-tags"></div>
+                        <h2 id="detail-title" class="text-3xl md:text-5xl font-bold serif-font leading-tight shadow-black drop-shadow-lg relative z-10"></h2>
                     </div>
                 </div>
 
-                <div class="p-6 sm:p-8">
-                    <div class="flex items-center justify-between text-amber-800/70 mb-8 text-sm border-b border-amber-100 pb-4">
-                        <div class="flex items-center gap-2 font-semibold">
+                <div class="p-6 md:p-10">
+                    <div class="flex items-center justify-between text-amber-800/80 mb-8 pb-4 border-b-2 border-amber-100 text-sm font-medium uppercase tracking-wide">
+                        <div class="flex items-center gap-2 bg-amber-50 px-3 py-1 rounded-lg">
                             <span>🍽️</span>
                             <span id="detail-servings"></span>
                         </div>
-                        <div class="italic text-xs opacity-70">Ricetta Personale</div>
+                        <div class="opacity-60">Ricetta Personale</div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
                         <div class="md:col-span-1 flex flex-col gap-6">
-                            <div>
-                                <h3 class="font-bold text-amber-900 text-xl mb-4 serif-font border-l-4 border-amber-400 pl-3">Ingredienti</h3>
+                            <div class="bg-amber-50/50 p-6 rounded-xl border border-amber-100">
+                                <h3 class="font-bold text-amber-900 text-2xl mb-4 serif-font flex items-center gap-2">
+                                    <span class="text-amber-500">🥕</span> Ingredienti
+                                </h3>
                                 <ul id="detail-ingredients" class="space-y-3 text-amber-900/90 text-lg list-none pl-0"></ul>
                             </div>
-                            <div id="detail-notes-container" class="hidden bg-amber-50 rounded-lg p-4 border border-amber-100">
-                                <h4 class="font-bold text-amber-800 text-sm mb-2 uppercase tracking-wide">Note</h4>
-                                <p id="detail-notes" class="text-amber-900/80 text-sm italic leading-relaxed whitespace-pre-wrap"></p>
+                            
+                            <div id="detail-notes-container" class="hidden bg-yellow-50 rounded-xl p-5 border border-yellow-200 shadow-sm">
+                                <h4 class="font-bold text-yellow-800 text-xs mb-2 uppercase tracking-wide flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path></svg>
+                                    Note dello Chef
+                                </h4>
+                                <p id="detail-notes" class="text-amber-900/80 text-sm italic leading-relaxed whitespace-pre-wrap font-serif"></p>
                             </div>
                         </div>
                         
                         <div class="md:col-span-2">
-                            <h3 class="font-bold text-amber-900 text-xl mb-4 serif-font border-l-4 border-amber-400 pl-3">Procedimento</h3>
-                            <div id="detail-procedure" class="prose prose-amber text-amber-900/80 leading-relaxed text-lg text-left"></div>
+                            <h3 class="font-bold text-amber-900 text-2xl mb-6 serif-font flex items-center gap-2 border-b border-amber-100 pb-2">
+                                <span class="text-amber-500">👨‍🍳</span> Procedimento
+                            </h3>
+                            <div id="detail-procedure" class="prose prose-amber prose-lg text-amber-900/80 leading-relaxed text-left"></div>
                         </div>
                     </div>
                 </div>
                 
-                <div class="bg-amber-50/50 p-4 text-center text-amber-900/40 text-xs border-t border-amber-100 mt-4">
-                    Il mio Ricettario Digitale
+                <div class="bg-amber-50/80 p-6 text-center text-amber-900/40 text-xs border-t border-amber-100 mt-4">
+                    ~ Il mio Ricettario Digitale ~
                 </div>
             </div>
 
             <div class="fixed bottom-6 left-0 w-full px-4 flex justify-center z-50 pointer-events-none">
-                <div class="pointer-events-auto bg-white/95 backdrop-blur shadow-2xl border border-amber-200 rounded-2xl p-2 flex items-center gap-1 sm:gap-3 max-w-md w-full justify-between transform transition-transform hover:scale-[1.02]">
-                    <button id="nav-prev" class="p-3 text-amber-800 hover:bg-amber-50 rounded-xl transition-colors disabled:opacity-30">
+                <div class="pointer-events-auto bg-white/95 backdrop-blur-md shadow-2xl border border-amber-200/60 rounded-2xl p-2 flex items-center gap-2 sm:gap-4 max-w-md w-full justify-between transform transition-transform hover:scale-[1.01] ring-1 ring-amber-900/5">
+                    <button id="nav-prev" class="p-3 text-amber-700 hover:bg-amber-50 rounded-xl transition-colors disabled:opacity-30 disabled:hover:bg-transparent">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                     </button>
 
                     <div class="flex gap-1 sm:gap-2">
-                        <button onclick="app.goHome()" class="flex flex-col items-center justify-center w-12 h-12 rounded-xl text-amber-700 hover:bg-amber-50 text-[10px] font-medium gap-1">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
-                            <span>Home</span>
+                        <button onclick="app.goHome()" class="flex flex-col items-center justify-center w-12 h-12 rounded-xl text-amber-800 hover:bg-amber-50 text-[10px] font-bold gap-0.5 transition-colors">
+                            <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                            Home
                         </button>
                         
-                        <button id="btn-link" class="flex flex-col items-center justify-center w-12 h-12 rounded-xl text-amber-700 hover:bg-amber-50 text-[10px] font-medium gap-1">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
-                            <span>Link</span>
+                        <button id="btn-link" class="flex flex-col items-center justify-center w-12 h-12 rounded-xl text-amber-800 hover:bg-amber-50 text-[10px] font-bold gap-0.5 transition-colors">
+                            <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                            Link
                         </button>
 
-                        <button id="btn-recalc" class="flex flex-col items-center justify-center w-12 h-12 rounded-xl text-amber-700 hover:bg-amber-50 text-[10px] font-medium gap-1">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
-                            <span>Dosi</span>
+                        <button id="btn-recalc" class="flex flex-col items-center justify-center w-12 h-12 rounded-xl text-amber-800 hover:bg-amber-50 text-[10px] font-bold gap-0.5 transition-colors">
+                            <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
+                            Dosi
                         </button>
-                        <button id="btn-edit-curr" class="flex flex-col items-center justify-center w-12 h-12 rounded-xl text-amber-700 hover:bg-amber-50 text-[10px] font-medium gap-1">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path></svg>
-                            <span>Modif</span>
+                        <button id="btn-edit-curr" class="flex flex-col items-center justify-center w-12 h-12 rounded-xl text-amber-800 hover:bg-amber-50 text-[10px] font-bold gap-0.5 transition-colors">
+                            <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z"></path></svg>
+                            Modif
                         </button>
-                        <button id="btn-share" class="flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-amber-100 to-amber-200 text-amber-900 hover:from-amber-200 hover:to-amber-300 text-[10px] font-bold gap-1 shadow-sm">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
-                            <span>Share</span>
+                        <button id="btn-share" class="flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-md hover:from-amber-600 hover:to-amber-700 text-[10px] font-bold gap-0.5 transition-all">
+                            <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+                            Export
                         </button>
                     </div>
 
-                    <button id="nav-next" class="p-3 text-amber-800 hover:bg-amber-50 rounded-xl transition-colors disabled:opacity-30">
+                    <button id="nav-next" class="p-3 text-amber-700 hover:bg-amber-50 rounded-xl transition-colors disabled:opacity-30 disabled:hover:bg-transparent">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                     </button>
                 </div>
@@ -248,26 +265,26 @@
         </section>
 
 
-        <section id="admin-view" class="hidden pb-20">
+        <section id="admin-view" class="hidden pb-20 animate-enter">
             <div class="flex justify-between items-center mb-6 bg-amber-100 p-4 rounded-xl border border-amber-200">
                 <h2 class="text-xl font-bold text-amber-900">Gestione Database</h2>
                 <button onclick="app.goHome()" class="text-sm bg-white px-3 py-2 rounded-lg border border-amber-300 shadow-sm hover:bg-amber-50">Chiudi</button>
             </div>
             
             <div id="admin-content-area" class="space-y-6">
-                <button id="btn-new-recipe" class="w-full py-6 bg-white border-2 border-dashed border-amber-300 text-amber-700 rounded-xl font-semibold hover:bg-amber-50 hover:border-amber-400 transition-all flex flex-col items-center justify-center gap-2">
-                    <div class="bg-amber-100 p-3 rounded-full">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                <button id="btn-new-recipe" class="w-full py-8 bg-white border-2 border-dashed border-amber-300 text-amber-700 rounded-2xl font-semibold hover:bg-amber-50 hover:border-amber-400 transition-all flex flex-col items-center justify-center gap-3 group">
+                    <div class="bg-amber-100 p-4 rounded-full group-hover:scale-110 transition-transform">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                     </div>
-                    <span>Crea Nuova Ricetta</span>
+                    <span class="text-lg">Crea Nuova Ricetta</span>
                 </button>
                 <div id="recipe-form-container"></div>
             </div>
         </section>
     </div>
 
-    <button id="btn-open-admin" class="fixed bottom-6 right-6 w-14 h-14 bg-white text-amber-900 rounded-full shadow-lg border-2 border-amber-100 flex items-center justify-center hover:scale-110 transition-transform z-30" title="Gestione Database">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+    <button id="btn-open-admin" class="fixed bottom-6 right-6 w-14 h-14 bg-white text-amber-900 rounded-full shadow-lg border border-amber-100 flex items-center justify-center hover:scale-110 transition-transform z-30 group" title="Gestione Database">
+        <svg class="w-6 h-6 group-hover:rotate-90 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
     </button>
 
     <div id="scale-modal" class="fixed inset-0 z-[60] flex items-end justify-center pointer-events-none">
@@ -287,7 +304,7 @@
                 <div class="mb-6 bg-orange-50 p-4 rounded-xl border border-orange-100">
                     <label class="block text-xs font-semibold text-orange-800 uppercase tracking-wide mb-1">Nuovo Formato</label>
                     <div class="flex gap-2">
-                        <input type="text" id="modal-target-servings" placeholder="Es: 8 porzioni, 24 cm" class="flex-grow border border-orange-200 rounded-lg px-3 py-2 text-lg font-bold text-orange-900 focus:ring-2 focus:ring-orange-400 focus:outline-none">
+                        <input type="text" id="modal-target-servings" placeholder="Es: 8 porzioni, 24 cm" class="flex-grow border border-orange-200 rounded-lg px-3 py-2 text-lg font-bold text-orange-900 focus:ring-2 focus:ring-orange-400 focus:outline-none bg-white">
                         <button id="modal-btn-calc" class="bg-orange-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-orange-600 shadow-sm active:scale-95 transition-transform">Calcola</button>
                     </div>
                     <p class="text-xs text-orange-700/60 mt-2">Dosi originali: <span id="modal-original-servings" class="font-bold"></span></p>
@@ -300,8 +317,8 @@
         </div>
     </div>
 
-    <div id="notification" class="fixed top-24 right-4 bg-white border-l-4 border-amber-500 text-amber-900 px-6 py-4 rounded shadow-xl transform translate-x-[150%] transition-transform duration-300 z-[70] max-w-xs font-medium text-sm flex items-center gap-3">
-        <span id="notif-icon" class="text-xl">🔔</span>
+    <div id="notification" class="fixed top-24 right-4 bg-white border-l-4 border-amber-500 text-amber-900 px-6 py-4 rounded-xl shadow-2xl transform translate-x-[150%] transition-transform duration-300 z-[70] max-w-xs font-medium text-sm flex items-center gap-3">
+        <span id="notif-icon" class="text-2xl">🔔</span>
         <span id="notif-msg">Messaggio</span>
     </div>
 
@@ -386,14 +403,15 @@
                     scaleModal: document.getElementById('scale-modal'),
                     scaleOverlay: document.getElementById('scale-overlay'),
                     btnOpenAdmin: document.getElementById('btn-open-admin'),
-                    btnLink: document.getElementById('btn-link')
+                    btnLink: document.getElementById('btn-link'),
+                    loading: document.getElementById('loading-state')
                 };
 
                 this.getRecipesFromLocal();
                 this.fetchRecipes();
 
                 this.dom.searchInput.addEventListener('input', (e) => this.handleSearch(e.target.value));
-                this.dom.clearSearchBtn.addEventListener('click', () => { this.dom.searchInput.value = ''; this.handleSearch(''); });
+                document.getElementById('clear-search').addEventListener('click', () => this.resetAndGoHome());
                 this.dom.navPrev.addEventListener('click', () => this.navigateRecipe(-1));
                 this.dom.navNext.addEventListener('click', () => this.navigateRecipe(1));
                 document.getElementById('btn-recalc').addEventListener('click', () => this.openScaleModal());
@@ -429,12 +447,15 @@
                         this.state.allRecipes = data;
                         localStorage.setItem('ricettarioDB', JSON.stringify(data));
                         this.renderHome();
-                        this.handleRouting(); // Check route after load
+                        this.handleRouting(); 
                     }
                 } catch(e) { 
                     console.error(e); 
-                    this.showNotification("Modalità Offline", true); 
+                    this.showNotification("Uso dati locali (Offline)", true); 
                     this.handleRouting();
+                } finally {
+                    this.dom.loading.classList.add('hidden');
+                    this.dom.catContainer.classList.remove('hidden');
                 }
             },
 
@@ -450,57 +471,70 @@
             renderHome() {
                 const recipes = this.state.allRecipes;
                 const container = this.dom.catContainer;
+                
                 container.innerHTML = '';
-                if(recipes.length === 0) { container.innerHTML = '<p class="text-center text-amber-800 opacity-60 mt-10">Nessuna ricetta.</p>'; return; }
 
+                if(recipes.length === 0) return;
+
+                // Calcolo Tag
                 const tagCounts = {};
                 const recipeIdsInTop = new Set();
                 recipes.forEach(r => {
-                    if(r.tags) r.tags.toLowerCase().split(',').forEach(t => { const tag = t.trim(); if(tag) tagCounts[tag] = (tagCounts[tag] || 0) + 1; });
+                    if(r.tags) r.tags.toLowerCase().split(',').forEach(t => { 
+                        const tag = t.trim(); 
+                        if(tag) tagCounts[tag] = (tagCounts[tag] || 0) + 1; 
+                    });
                 });
-                const sortedTags = Object.entries(tagCounts).sort((a,b) => b[1] - a[1]).slice(0, 10).map(e => e[0]);
+                
+                // Top Tags Sorting
+                const sortedTags = Object.entries(tagCounts).sort((a,b) => b[1] - a[1]);
 
-                sortedTags.forEach(tag => {
+                // RENDER ACCORDIONS (2 COLONNE)
+                sortedTags.slice(0, 10).forEach(([tag, count]) => {
                     const recipesInTag = recipes.filter(r => r.tags && r.tags.toLowerCase().split(',').map(t=>t.trim()).includes(tag));
                     recipesInTag.forEach(r => recipeIdsInTop.add(r.id));
                     this.createAccordion(tag, recipesInTag, container);
                 });
+                
+                // Categoria Altro
                 const otherRecipes = recipes.filter(r => !recipeIdsInTop.has(r.id));
                 if(otherRecipes.length > 0) this.createAccordion('Altro / Tutti', otherRecipes, container);
             },
 
             createAccordion(title, recipes, container) {
                 const item = document.createElement('div');
-                item.className = 'accordion-item bg-white border border-amber-200/60 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all';
+                item.className = 'accordion-item';
                 const displayTitle = title.charAt(0).toUpperCase() + title.slice(1);
                 
                 item.innerHTML = `
-                    <div class="accordion-header flex justify-between items-center p-4 cursor-pointer bg-white hover:bg-amber-50/50 transition-colors">
-                        <div class="flex items-center gap-3">
-                            <span class="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-800 font-bold text-xs shadow-inner">${recipes.length}</span>
+                    <div class="accordion-header flex justify-between items-center p-4 cursor-pointer">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-sm shadow-inner">${recipes.length}</div>
                             <h3 class="font-bold text-amber-900 text-lg tracking-tight">${displayTitle}</h3>
                         </div>
-                        <svg class="accordion-icon w-5 h-5 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
+                        <svg class="accordion-icon w-6 h-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </div>
-                    <div class="accordion-content bg-amber-50/20"><div class="p-2 space-y-1"></div></div>
+                    <div class="accordion-content"><div class="p-2 space-y-2"></div></div>
                 `;
 
                 const listContainer = item.querySelector('.accordion-content > div');
                 recipes.forEach(recipe => {
                     const row = document.createElement('div');
-                    row.className = 'p-2 pl-3 hover:bg-white rounded-lg cursor-pointer flex items-center gap-3 transition-all group';
+                    row.className = 'p-3 hover:bg-amber-50 rounded-xl cursor-pointer flex items-center gap-4 transition-all group border border-transparent hover:border-amber-100';
                     row.onclick = () => this.openRecipe(recipe.id, 'tag', recipes);
+                    
                     let imgUrl = recipe.image || this.defaultImg;
                     if(imgUrl && !imgUrl.startsWith('http') && !imgUrl.startsWith('img/')) imgUrl = 'img/' + imgUrl;
 
                     row.innerHTML = `
-                       <div class="w-10 h-10 rounded-lg bg-gray-200 overflow-hidden flex-shrink-0 shadow-sm border border-amber-100">
+                       <div class="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0 shadow-sm border border-amber-100">
                            <img src="${imgUrl}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                        </div>
-                       <span class="font-medium text-amber-900 text-sm">${recipe.name}</span>
+                       <span class="font-medium text-amber-900 text-base">${recipe.name}</span>
                     `;
                     listContainer.appendChild(row);
                 });
+                
                 item.querySelector('.accordion-header').onclick = () => {
                     const isOpen = item.classList.contains('active');
                     document.querySelectorAll('.accordion-item').forEach(el => el.classList.remove('active'));
@@ -511,29 +545,47 @@
 
             handleSearch(query) {
                 const term = query.toLowerCase().trim();
-                if(term.length === 0) { this.dom.searchResults.classList.add('hidden'); this.dom.catContainer.classList.remove('hidden'); return; }
-                this.dom.catContainer.classList.add('hidden'); this.dom.searchResults.classList.remove('hidden');
+                const clearBtn = document.getElementById('clear-search');
+                
+                if(term.length === 0) { 
+                    this.dom.searchResults.classList.add('hidden'); 
+                    this.dom.catContainer.classList.remove('hidden');
+                    document.getElementById('hero-section').classList.remove('hidden');
+                    clearBtn.classList.add('hidden');
+                    return; 
+                }
+
+                clearBtn.classList.remove('hidden');
+                this.dom.catContainer.classList.add('hidden');
+                this.dom.searchResults.classList.remove('hidden');
                 
                 const results = this.state.allRecipes.filter(r => 
                     r.name.toLowerCase().includes(term) || (r.tags && r.tags.toLowerCase().includes(term)) || (r.ingredients && r.ingredients.some(i => i.name.toLowerCase().includes(term)))
                 );
+                
                 this.dom.searchCount.textContent = results.length;
                 this.dom.searchList.innerHTML = '';
-                if(results.length === 0) { this.dom.searchList.innerHTML = '<div class="text-center py-8 text-amber-800/40 italic">Nessun risultato</div>'; return; }
+                
+                if(results.length === 0) { 
+                    this.dom.searchList.innerHTML = '<div class="text-center py-10 text-amber-800/40 italic">Nessuna ricetta trovata 😔</div>'; 
+                    return; 
+                }
 
                 results.forEach(recipe => {
                     const el = document.createElement('div');
-                    el.className = 'bg-white p-3 rounded-xl shadow-sm border border-amber-100 flex gap-3 cursor-pointer hover:shadow-md transition-all items-center';
+                    el.className = 'bg-white p-4 rounded-xl shadow-sm border border-amber-100 flex gap-4 cursor-pointer hover:shadow-md transition-all items-center';
                     el.onclick = () => this.openRecipe(recipe.id, 'search', results);
+                    
                     let imgUrl = recipe.image || this.defaultImg;
                     if(imgUrl && !imgUrl.startsWith('http') && !imgUrl.startsWith('img/')) imgUrl = 'img/' + imgUrl;
+                    
                     el.innerHTML = `
-                        <div class="w-14 h-14 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
+                        <div class="w-16 h-16 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0">
                              <img src="${imgUrl}" class="w-full h-full object-cover">
                         </div>
                         <div>
-                            <h4 class="font-bold text-amber-900 leading-tight">${recipe.name}</h4>
-                            <div class="flex flex-wrap gap-1 mt-1">${(recipe.tags||'').split(',').slice(0,3).map(t=>`<span class="text-[10px] bg-amber-50 px-1.5 py-0.5 rounded text-amber-700 uppercase">${t}</span>`).join('')}</div>
+                            <h4 class="font-bold text-amber-900 text-lg leading-tight mb-1">${recipe.name}</h4>
+                            <div class="flex flex-wrap gap-1 opacity-70">${(recipe.tags||'').split(',').slice(0,3).map(t=>`<span class="text-[10px] bg-amber-100 px-2 py-0.5 rounded text-amber-800 uppercase font-semibold">${t}</span>`).join('')}</div>
                         </div>
                     `;
                     this.dom.searchList.appendChild(el);
@@ -543,7 +595,6 @@
             searchByTag(tag) {
                 this.dom.searchInput.value = tag;
                 this.handleSearch(tag);
-                this.goHome();
             },
 
             openRecipe(id, contextType, contextList) {
@@ -562,7 +613,12 @@
                 this.state.filteredRecipes = contextList || this.state.allRecipes;
                 this.state.currentRecipeIndex = this.state.filteredRecipes.findIndex(r => r.id === id);
                 this.renderRecipeDetail(recipe);
-                this.dom.homeView.classList.add('hidden'); this.dom.adminView.classList.add('hidden'); this.dom.recipeDetailView.classList.remove('hidden'); this.dom.btnOpenAdmin.classList.add('hidden');
+                
+                this.dom.homeView.classList.add('hidden'); 
+                this.dom.adminView.classList.add('hidden'); 
+                this.dom.recipeDetailView.classList.remove('hidden'); 
+                this.dom.btnOpenAdmin.classList.add('hidden');
+                
                 window.scrollTo(0,0);
             },
 
@@ -580,15 +636,15 @@
                     .map(t => {
                         const tag = t.trim();
                         const safeTag = tag.replace(/'/g, "\\'");
-                        return `<span onclick="app.searchByTag('${safeTag}')" class="cursor-pointer hover:bg-white/40 bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wider transition-colors">${tag}</span>`;
+                        return `<span onclick="app.searchByTag('${safeTag}')" class="cursor-pointer hover:bg-white/40 bg-white/20 backdrop-blur-md border border-white/30 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider transition-colors shadow-sm">${tag}</span>`;
                     }).join('');
 
                 this.dom.detailIng.innerHTML = '';
                 if(recipe.ingredients) {
                     recipe.ingredients.forEach(ing => {
                         const li = document.createElement('li');
-                        li.className = 'flex justify-between items-baseline border-b border-amber-100/50 pb-2 pt-1 last:border-0';
-                        li.innerHTML = `<span class="font-medium flex-1 text-amber-900">${ing.name}</span><span class="text-amber-800 whitespace-nowrap ml-4 font-mono text-base"><span class="ing-amount font-bold" data-orig="${ing.amount}">${ing.amount}</span><span class="text-xs ml-0.5">${ing.unit === 'qb' ? 'q.b.' : ing.unit}</span></span>`;
+                        li.className = 'flex justify-between items-baseline border-b border-amber-100/50 pb-2 pt-1 last:border-0 hover:bg-white/50 px-2 rounded transition-colors';
+                        li.innerHTML = `<span class="font-medium flex-1 text-amber-900">${ing.name}</span><span class="text-amber-800 whitespace-nowrap ml-4 font-mono text-base"><span class="ing-amount font-bold" data-orig="${ing.amount}">${ing.amount}</span><span class="text-xs ml-1 text-amber-600 font-sans">${ing.unit === 'qb' ? 'q.b.' : ing.unit}</span></span>`;
                         this.dom.detailIng.appendChild(li);
                     });
                 }
@@ -601,7 +657,8 @@
                 }
 
                 const steps = (recipe.procedure || '').split('\n').filter(s => s.trim());
-                this.dom.detailProc.innerHTML = steps.map(s => `<p class="mb-4 relative pl-5"><span class="absolute left-0 top-0 text-amber-400 font-bold">›</span>${s}</p>`).join('');
+                this.dom.detailProc.innerHTML = steps.map(s => `<p class="mb-6 relative pl-6"><span class="absolute left-0 top-1 text-amber-400 font-bold text-xl">›</span>${s}</p>`).join('');
+                
                 this.dom.navPrev.disabled = this.state.filteredRecipes.length <= 1;
                 this.dom.navNext.disabled = this.state.filteredRecipes.length <= 1;
             },
@@ -619,7 +676,10 @@
                 if(updateHistory) {
                     history.pushState(null, null, window.location.pathname + window.location.search);
                 }
-                this.dom.recipeDetailView.classList.add('hidden'); this.dom.adminView.classList.add('hidden'); this.dom.homeView.classList.remove('hidden'); this.dom.btnOpenAdmin.classList.remove('hidden');
+                this.dom.recipeDetailView.classList.add('hidden'); 
+                this.dom.adminView.classList.add('hidden'); 
+                this.dom.homeView.classList.remove('hidden'); 
+                this.dom.btnOpenAdmin.classList.remove('hidden');
                 window.scrollTo(0,0);
             },
 
@@ -633,9 +693,9 @@
             copyRecipeLink() {
                 const url = window.location.href;
                 navigator.clipboard.writeText(url).then(() => {
-                    this.showNotification("Link copiato negli appunti!");
+                    this.showNotification("Link copiato! 🔗");
                 }).catch(err => {
-                    this.showNotification("Impossibile copiare il link", true);
+                    this.showNotification("Errore copia", true);
                 });
             },
 
@@ -649,7 +709,7 @@
                     if(ing.unit === 'qb') return;
                     const div = document.createElement('div');
                     div.className = 'flex items-center gap-3 py-2 border-b border-gray-50 last:border-0';
-                    div.innerHTML = `<span class="text-sm text-gray-700 flex-1 truncate font-medium">${ing.name}</span><div class="flex items-center gap-1 bg-gray-50 rounded p-1"><input type="text" class="mod-ing-input w-20 bg-transparent text-right text-base font-bold text-amber-900 focus:outline-none" data-idx="${idx}" data-orig="${ing.amount}" value="${ing.amount}"><span class="text-xs text-gray-500 w-6">${ing.unit}</span></div>`;
+                    div.innerHTML = `<span class="text-sm text-gray-700 flex-1 truncate font-medium">${ing.name}</span><div class="flex items-center gap-1 bg-gray-50 rounded p-1 border border-gray-200"><input type="text" class="mod-ing-input w-20 bg-transparent text-right text-base font-bold text-amber-900 focus:outline-none" data-idx="${idx}" data-orig="${ing.amount}" value="${ing.amount}"><span class="text-xs text-gray-500 w-6">${ing.unit}</span></div>`;
                     modalList.appendChild(div);
                 });
                 this.dom.scaleModal.classList.add('open');
@@ -663,7 +723,7 @@
                 const originalStr = document.getElementById('modal-original-servings').textContent;
                 const orig = this.parseServings(originalStr); const target = this.parseServings(targetStr);
                 if(orig.val === 0 || target.val === 0 || orig.type === 'unk' || target.type === 'unk') { this.showNotification("Formato non valido", true); return; }
-                if(orig.type !== target.type) { this.showNotification("Impossibile convertire Teglia <-> Porzioni", true); return; }
+                if(orig.type !== target.type) { this.showNotification("Impossibile conv. Teglia <-> Porzioni", true); return; }
                 let factor = 1;
                 if(orig.type === 'porzioni') factor = target.val / orig.val;
                 if(orig.type === 'teglia') factor = (target.val * target.val) / (orig.val * orig.val);
@@ -692,7 +752,7 @@
                 });
                 const targetS = document.getElementById('modal-target-servings').value;
                 if(targetS) this.dom.detailServings.textContent = targetS + " (Mod)";
-                this.closeScaleModal(); this.showNotification("Dosi aggiornate!");
+                this.closeScaleModal(); this.showNotification("Dosi ricalcolate!");
             },
 
             parseServings(str) {
@@ -720,7 +780,7 @@
                     form.querySelector('#form-servings').value = recipeData.servings;
                     form.querySelector('#form-tags').value = recipeData.tags || '';
                     form.querySelector('#form-image').value = recipeData.image || '';
-                    form.querySelector('#form-notes').value = recipeData.notes || ''; // Load Notes
+                    form.querySelector('#form-notes').value = recipeData.notes || ''; 
                     form.querySelector('#form-procedure').value = recipeData.procedure;
                     form.querySelector('#form-delete').classList.remove('hidden');
                     if(recipeData.ingredients) recipeData.ingredients.forEach(ing => this.addFormIngredientRow(ingList, ing));
@@ -729,7 +789,7 @@
                 form.querySelector('#form-add-ing').onclick = () => this.addFormIngredientRow(ingList);
                 form.querySelector('#form-cancel').onclick = () => { container.innerHTML = ''; if(recipeData) this.openRecipe(recipeData.id, this.state.currentContext, this.state.filteredRecipes); else this.openAdminPanel(); };
                 form.onsubmit = (e) => this.saveRecipe(e);
-                form.querySelector('#form-delete').onclick = () => { if(confirm("Sei sicuro?")) this.deleteRecipe(recipeData.id); };
+                form.querySelector('#form-delete').onclick = () => { if(confirm("Eliminare definitivamente?")) this.deleteRecipe(recipeData.id); };
             },
 
             addFormIngredientRow(container, data = {name:'', amount:'', unit:'g'}) {
@@ -754,7 +814,7 @@
             async saveRecipe(e) {
                 e.preventDefault();
                 const form = e.target; const btn = form.querySelector('#form-save');
-                const originalText = btn.textContent; btn.textContent = 'Salvataggio Cloud...'; btn.disabled = true;
+                const originalText = btn.textContent; btn.textContent = 'Salvataggio...'; btn.disabled = true;
 
                 const ingredients = [];
                 form.querySelectorAll('#form-ingredients-list > div').forEach(row => {
@@ -793,7 +853,6 @@
                 try {
                     const originalElement = document.getElementById('recipe-card-content');
                     const clone = originalElement.cloneNode(true);
-                    
                     const exportWrapper = document.createElement('div');
                     exportWrapper.className = 'export-container';
                     exportWrapper.appendChild(clone);
@@ -833,3 +892,4 @@
     </script>
 </body>
 </html>
+```
