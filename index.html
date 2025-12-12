@@ -192,13 +192,13 @@
                             </div>
                             <div id="detail-notes-container" class="hidden bg-amber-50 rounded-lg p-4 border border-amber-100">
                                 <h4 class="font-bold text-amber-800 text-sm mb-2 uppercase tracking-wide">Note</h4>
-                                <p id="detail-notes" class="text-amber-900/80 text-sm italic leading-relaxed"></p>
+                                <p id="detail-notes" class="text-amber-900/80 text-sm italic leading-relaxed whitespace-pre-wrap"></p>
                             </div>
                         </div>
                         
                         <div class="md:col-span-2">
                             <h3 class="font-bold text-amber-900 text-xl mb-4 serif-font border-l-4 border-amber-400 pl-3">Procedimento</h3>
-                            <div id="detail-procedure" class="prose prose-amber text-amber-900/80 leading-relaxed text-lg text-justify"></div>
+                            <div id="detail-procedure" class="prose prose-amber text-amber-900/80 leading-relaxed text-lg text-left"></div>
                         </div>
                     </div>
                 </div>
@@ -551,7 +551,8 @@
                     recipe.ingredients.forEach(ing => {
                         const li = document.createElement('li');
                         li.className = 'flex justify-between items-baseline border-b border-amber-100/50 pb-2 pt-1 last:border-0';
-                        li.innerHTML = `<span class="font-medium flex-1 text-amber-900">${ing.name}</span><span class="text-amber-800 whitespace-nowrap ml-4 font-mono text-base"><span class="ing-amount font-bold" data-orig="${ing.amount}">${ing.amount}</span><span class="text-xs ml-0.5">${ing.unit === 'qb' ? '' : ing.unit}</span></span>`;
+                        // MODIFICA: visualizzazione "q.b." se unità è qb
+                        li.innerHTML = `<span class="font-medium flex-1 text-amber-900">${ing.name}</span><span class="text-amber-800 whitespace-nowrap ml-4 font-mono text-base"><span class="ing-amount font-bold" data-orig="${ing.amount}">${ing.amount}</span><span class="text-xs ml-0.5">${ing.unit === 'qb' ? 'q.b.' : ing.unit}</span></span>`;
                         this.dom.detailIng.appendChild(li);
                     });
                 }
@@ -564,6 +565,7 @@
                 }
 
                 const steps = (recipe.procedure || '').split('\n').filter(s => s.trim());
+                // MODIFICA: text-left
                 this.dom.detailProc.innerHTML = steps.map(s => `<p class="mb-4 relative pl-5"><span class="absolute left-0 top-0 text-amber-400 font-bold">›</span>${s}</p>`).join('');
                 this.dom.navPrev.disabled = this.state.filteredRecipes.length <= 1;
                 this.dom.navNext.disabled = this.state.filteredRecipes.length <= 1;
@@ -583,12 +585,10 @@
                 window.scrollTo(0,0);
             },
 
-            // 3) NUOVA FUNZIONE RESET
             resetAndGoHome() {
                 this.dom.searchInput.value = '';
                 this.handleSearch('');
                 this.goHome();
-                // Chiudi eventuali accordion aperti
                 document.querySelectorAll('.accordion-item').forEach(el => el.classList.remove('active'));
             },
 
@@ -602,7 +602,6 @@
                     if(ing.unit === 'qb') return;
                     const div = document.createElement('div');
                     div.className = 'flex items-center gap-3 py-2 border-b border-gray-50 last:border-0';
-                    // 2) CAMBIO TYPE IN TEXT PER SUPPORTARE FRAZIONI (es 0,5)
                     div.innerHTML = `<span class="text-sm text-gray-700 flex-1 truncate font-medium">${ing.name}</span><div class="flex items-center gap-1 bg-gray-50 rounded p-1"><input type="text" class="mod-ing-input w-20 bg-transparent text-right text-base font-bold text-amber-900 focus:outline-none" data-idx="${idx}" data-orig="${ing.amount}" value="${ing.amount}"><span class="text-xs text-gray-500 w-6">${ing.unit}</span></div>`;
                     modalList.appendChild(div);
                 });
@@ -623,12 +622,11 @@
                 if(orig.type === 'teglia') factor = (target.val * target.val) / (orig.val * orig.val);
                 document.querySelectorAll('.mod-ing-input').forEach(input => {
                     const originalAmount = parseFloat(input.dataset.orig.replace(',', '.'));
-                    // 2) LOGICA RICALCOLO: Arrotonda solo se NON è "pz"
                     if(!isNaN(originalAmount)) { 
                         const newVal = originalAmount * factor; 
                         const unitSpan = input.nextElementSibling;
                         if(unitSpan && unitSpan.textContent === 'pz') {
-                             input.value = parseFloat(newVal.toFixed(2)); // Mostra decimali per i pezzi
+                             input.value = parseFloat(newVal.toFixed(2)); 
                         } else {
                              input.value = (newVal < 10) ? newVal.toFixed(1) : Math.round(newVal); 
                         }
@@ -675,7 +673,7 @@
                     form.querySelector('#form-servings').value = recipeData.servings;
                     form.querySelector('#form-tags').value = recipeData.tags || '';
                     form.querySelector('#form-image').value = recipeData.image || '';
-                    form.querySelector('#form-notes').value = recipeData.notes || ''; // Load Notes
+                    form.querySelector('#form-notes').value = recipeData.notes || ''; 
                     form.querySelector('#form-procedure').value = recipeData.procedure;
                     form.querySelector('#form-delete').classList.remove('hidden');
                     if(recipeData.ingredients) recipeData.ingredients.forEach(ing => this.addFormIngredientRow(ingList, ing));
@@ -690,7 +688,6 @@
             addFormIngredientRow(container, data = {name:'', amount:'', unit:'g'}) {
                 const div = document.createElement('div');
                 div.className = 'ingredient-row flex gap-2 items-center';
-                // 1) AGGIUNTO BOTTONI SU/GIU
                 div.innerHTML = `<input type="text" class="form-ing-name flex-grow border border-amber-200 rounded px-2 py-2 text-sm focus:outline-none focus:border-amber-400" placeholder="Ingrediente" value="${data.name}" required><input type="text" class="form-ing-amount w-16 border border-amber-200 rounded px-2 py-2 text-sm text-right focus:outline-none focus:border-amber-400" placeholder="Qtà" value="${data.amount}"><select class="form-ing-unit w-16 border border-amber-200 rounded px-1 py-2 text-sm bg-white focus:outline-none focus:border-amber-400"><option value="g" ${data.unit==='g'?'selected':''}>g</option><option value="pz" ${data.unit==='pz'?'selected':''}>pz</option><option value="ml" ${data.unit==='ml'?'selected':''}>ml</option><option value="qb" ${data.unit==='qb'?'selected':''}>qb</option></select>
                 <div class="flex flex-col gap-0.5"><button type="button" class="text-amber-400 hover:text-amber-600 px-1 text-[10px]" onclick="app.moveIngRow(this, -1)">▲</button><button type="button" class="text-amber-400 hover:text-amber-600 px-1 text-[10px]" onclick="app.moveIngRow(this, 1)">▼</button></div>
                 <button type="button" class="text-rose-400 hover:text-rose-600 font-bold px-2">×</button>`;
@@ -698,13 +695,11 @@
                 container.appendChild(div);
             },
 
-            // 1) NUOVA FUNZIONE SPOSTA RIGA
             moveIngRow(btn, direction) {
-                const row = btn.closest('.ingredient-row'); // Il div riga
+                const row = btn.closest('.ingredient-row'); 
                 if (direction === -1 && row.previousElementSibling) {
                     row.parentNode.insertBefore(row, row.previousElementSibling);
                 } else if (direction === 1 && row.nextElementSibling) {
-                    // Fix: insertBefore inserisce PRIMA, quindi per andare dopo next dobbiamo inserire prima di next.next
                     row.parentNode.insertBefore(row, row.nextElementSibling.nextElementSibling);
                 }
             },
