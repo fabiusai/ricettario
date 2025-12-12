@@ -44,7 +44,7 @@
             background: white;
             transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            height: fit-content; /* Importante per la griglia */
+            height: fit-content; 
         }
         
         .accordion-item:hover {
@@ -62,9 +62,9 @@
         
         .accordion-item.active {
             border-color: #d97706;
-            background: #fffbeb; /* Un leggero giallino quando attivo */
+            background: #fffbeb; 
             box-shadow: 0 10px 25px -5px rgba(217, 119, 6, 0.15);
-            grid-row: span 2; /* Se supportato, aiuta nel layout masonry */
+            grid-row: span 2; 
         }
         
         .accordion-item.active .accordion-content {
@@ -595,6 +595,8 @@
             searchByTag(tag) {
                 this.dom.searchInput.value = tag;
                 this.handleSearch(tag);
+                // FIX: Torna alla home e mostra i risultati
+                this.goHome();
             },
 
             openRecipe(id, contextType, contextList) {
@@ -892,4 +894,3 @@
     </script>
 </body>
 </html>
-```
